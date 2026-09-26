@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.valeronm.breadcrumb.R
+import io.github.valeronm.breadcrumb.data.PlaceAddresses
 import io.github.valeronm.breadcrumb.domain.CityAtlas
 import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.PlaceResolver
@@ -260,6 +261,7 @@ internal fun PlaceDetailScreen(
             // place is is a fact about it, where the category and the counts are what has been made
             // of it.
             PlaceLocality(summary.anchor, nowMs, viewModel)
+            PlaceAddressLine(summary.pin)
             // What this is for and what it adds up to, held above the visits rather than read once
             // and scrolled past — the counts summarise the list moving under them, and the chip is
             // the screen's one control. Above the list rather than a sticky header inside it: at
@@ -340,6 +342,26 @@ internal fun PlaceDetailScreen(
  * which is a question about the place; what a visit was for the reader is a question about that
  * visit, and [zoneShiftLabel] is asked at the instant either time.
  */
+
+/**
+ * The street address at the place's pin, under the city line, when the reader turned addresses on —
+ * the same lookup and the same kept answer the Places list shows, so the two never disagree.
+ * Nothing at all while it is off or unknown.
+ */
+@Composable
+private fun PlaceAddressLine(pin: Coordinate) {
+    val context = LocalContext.current
+    val address by produceState(PlaceAddresses.cached(context, pin).takeIf { PlaceAddresses.enabled(context) }, pin) {
+        value = PlaceAddresses.addressOf(context, pin)
+    }
+    Text(
+        address ?: return,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp),
+    )
+}
+
 @Composable
 private fun PlaceLocality(at: Coordinate, nowMs: Long, viewModel: TrackListViewModel) {
     val locale = LocalConfiguration.current.locales[0]
@@ -394,15 +416,17 @@ private fun PlaceMapView(
     val neighbors = remember(neighborhood) {
         neighborhood.nearby.mapNotNull { other -> other.place?.let { PlaceMarker(other.anchor, it) } }
     }
-    MapLibrePlaceMap(
-        center = PlaceMarker(summary.anchor, summary.place),
-        radiusM = summary.radiusM,
-        endpoints = emptyList(),
-        modifier = modifier,
-        neighbors = neighbors,
-        rivalAreas = neighborhood.rivals,
-        onLongPress = {},
-    )
+    MapShade(placesMapDark()) {
+        MapLibrePlaceMap(
+            center = PlaceMarker(summary.anchor, summary.place),
+            radiusM = summary.radiusM,
+            endpoints = emptyList(),
+            modifier = modifier,
+            neighbors = neighbors,
+            rivalAreas = neighborhood.rivals,
+            onLongPress = {},
+        )
+    }
 }
 
 @Composable

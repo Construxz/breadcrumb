@@ -63,6 +63,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.valeronm.breadcrumb.R
 import io.github.valeronm.breadcrumb.data.DISCARDED_RETENTION_DAYS
+import io.github.valeronm.breadcrumb.data.PlaceAddresses
 import io.github.valeronm.breadcrumb.data.export.BackupExporter
 import io.github.valeronm.breadcrumb.data.export.LogExporter
 import io.github.valeronm.breadcrumb.util.BuildIdentity
@@ -481,10 +482,18 @@ private fun OnlineServicesGroup() {
         true,
         { AppSettings.isOnlinePlaceSearch(context) },
     ) { AppSettings.setOnlinePlaceSearch(context, it) }
+    val addresses = rememberPref(
+        false,
+        { AppSettings.showPlaceAddresses(context) },
+    ) {
+        AppSettings.setShowPlaceAddresses(context, it)
+        // Nothing fetched under the switch outlives it being turned off.
+        if (!it) PlaceAddresses.clear(context)
+    }
     SettingsGroup(
         stringResource(R.string.settings_online_services),
         stringResource(R.string.online_services_description),
-        listOf(onlineSearch),
+        listOf(onlineSearch, addresses),
     ) {
         GroupedRows(
             {
@@ -500,6 +509,16 @@ private fun OnlineServicesGroup() {
                     subtitle = stringResource(R.string.privacy_online_search_sub),
                     checked = onlineSearch.value,
                     onCheckedChange = { onlineSearch.set(it) },
+                )
+            },
+            {
+                // Rides on the search: the same service, and the same switch turns both off.
+                SwitchSettingRow(
+                    title = stringResource(R.string.privacy_place_addresses),
+                    subtitle = stringResource(R.string.privacy_place_addresses_sub),
+                    checked = onlineSearch.value && addresses.value,
+                    enabled = onlineSearch.value,
+                    onCheckedChange = { addresses.set(it) },
                 )
             },
         )
