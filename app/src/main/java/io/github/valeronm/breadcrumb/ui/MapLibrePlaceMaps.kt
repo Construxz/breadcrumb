@@ -18,6 +18,7 @@ import io.github.valeronm.breadcrumb.domain.PlaceClusterer
 import io.github.valeronm.breadcrumb.domain.PlaceResolver
 import io.github.valeronm.breadcrumb.domain.TimelineItem
 import io.github.valeronm.breadcrumb.domain.placeCategory
+import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
@@ -138,14 +139,14 @@ internal fun MapLibrePlaceMap(
                 true
             }
         },
-        onStyleLoaded = { ctx, map, style ->
+        onStyleLoaded = { ctx, map, style, dark ->
             applied.circleCenter = center.location
             applied.circleRadiusM = radiusM
             applied.markers = endpoints to neighbors
             applied.center = center
             applied.capture = capture
             applied.rivalAreas = rivalAreas
-            addPlaceLayers(ctx, style, placeContent())
+            addPlaceLayers(ctx, style, placeContent(), dark)
             framePlace(map, center.location, radiusM)
         },
         onUpdate = { map, style ->
@@ -248,7 +249,7 @@ private fun addEndpointDotImages(ctx: Context, style: Style, withBrief: Boolean 
     }
 }
 
-private fun addPlaceLayers(ctx: Context, style: Style, content: PlaceMapContent) {
+private fun addPlaceLayers(ctx: Context, style: Style, content: PlaceMapContent, dark: Boolean) {
     // Rivals first, so this place's own circle reads on top of them where they overlap.
     style.addSource(GeoJsonSource(PLACE_RIVAL_SOURCE, captureAreaCollection(content.rivalAreas)))
     addContextCircleLayers(style, PLACE_RIVAL_SOURCE, PLACE_RIVAL_FILL, PLACE_RIVAL_LINE)
@@ -268,7 +269,7 @@ private fun addPlaceLayers(ctx: Context, style: Style, content: PlaceMapContent)
         ),
     )
     style.addLayer(
-        labeledSymbolLayer(ctx, PLACE_MARKER_LAYER, PLACE_MARKER_SOURCE)
+        labeledSymbolLayer(dark, PLACE_MARKER_LAYER, PLACE_MARKER_SOURCE)
             .withProperties(markerIconProperty(content.radiusM)),
     )
 }
@@ -387,9 +388,9 @@ internal fun rememberStayPlaces(
 
 /**
  * Every place on one map: labeled pins for named places, small dots for unnamed clusters, sized
- * down the zoom range (see [overviewIconSize]) and framed to fit them all on open — and again when
- * [frameKey] asks. A pin is colored by its category's group and shows the category's glyph at
- * [GLYPH_ZOOM]. Tapping a marker reports its key via [onOpen].
+ * down the zoom range (see [overviewIconSize]) and framed to fit them all on open, unless [camera]
+ * hands it a position — and again when [frameKey] asks. A pin is colored by its category's group
+ * and shows the category's glyph at [GLYPH_ZOOM]. Tapping a marker reports its key via [onOpen].
  *
  * Each place that claims a reach ([OverviewPlace.radiusM]) also gets it drawn, under the markers and
  * in the weight a ring the screen is *not* about wears everywhere ([addContextCircleLayers]) — the
@@ -399,10 +400,11 @@ internal fun rememberStayPlaces(
 internal fun MapLibrePlacesMap(
     places: List<OverviewPlace>,
     /** Re-fits the camera to every place, as the map opened, when this differs from the value
-     *  last applied — the journey map's contract. Framing otherwise runs once per map instance;
+     *  last applied — the journey map's contract. Framing otherwise runs at most once per map instance;
      *  the Places tab keys it on its home-gesture counter. */
     frameKey: Any,
     onOpen: (String) -> Unit,
+    camera: CameraCarry,
     modifier: Modifier = Modifier,
 ) {
     val applied = remember { AppliedOverviewInputs() }
@@ -410,13 +412,14 @@ internal fun MapLibrePlacesMap(
     MapLibreStyledMap(
         modifier = modifier,
         onMapReady = { map ->
+            map.addOnCameraIdleListener { camera.latest = map.cameraPosition }
             map.addOnMapClickListener { latLng ->
                 val key = overviewPlaceKeyNear(map, latLng)
                 if (key != null) applied.onOpen(key)
                 key != null
             }
         },
-        onStyleLoaded = { ctx, map, style ->
+        onStyleLoaded = { ctx, map, style, dark ->
             applied.places = places
             applied.frameKey = frameKey
             // Before the markers, so the pins keep the top: a ring is the ground a place claims and
@@ -425,8 +428,9 @@ internal fun MapLibrePlacesMap(
             addContextCircleLayers(style, OVERVIEW_CIRCLE_SOURCE, OVERVIEW_CIRCLE_FILL, OVERVIEW_CIRCLE_LINE)
             style.getLayer(OVERVIEW_CIRCLE_FILL)?.minZoom = OVERVIEW_CIRCLE_ZOOM
             style.getLayer(OVERVIEW_CIRCLE_LINE)?.minZoom = OVERVIEW_CIRCLE_ZOOM
-            addOverviewLayers(ctx, style, places)
-            frameAllPlaces(map, places)
+            addOverviewLayers(ctx, style, places, dark)
+            val carried = camera.takeCarried()
+            if (carried != null) map.cameraPosition = carried else frameAllPlaces(map, places)
         },
         onUpdate = { map, style ->
             if (applied.places !== places) {
@@ -477,6 +481,19 @@ private fun featureNear(map: MapLibreMap, latLng: LatLng, layer: String): Featur
     val screen = map.projection.toScreenLocation(latLng)
     val touch = RectF(screen.x - 36, screen.y - 36, screen.x + 36, screen.y + 36)
     return map.queryRenderedFeatures(touch, layer).firstOrNull()
+}
+
+/** The camera a [MapLibrePlacesMap] last came to rest at, which the next map built in its place
+ *  opens on only after [carryToNextMap]. */
+internal class CameraCarry {
+    var latest: CameraPosition? = null
+    private var carry = false
+
+    fun carryToNextMap() {
+        carry = true
+    }
+
+    fun takeCarried(): CameraPosition? = latest.takeIf { carry }.also { carry = false }
 }
 
 /** Last-applied input of the all-places overview map. */
@@ -539,11 +556,17 @@ private const val LABEL_ZOOM = 11f
 // track map's end-pin behavior. The zoom ramp below is a property of a *field* of places framed
 // to a whole history; a journey holds a handful, which cannot smudge into each other any more
 // than a track's two ends can.
-internal fun addOverviewLayers(ctx: Context, style: Style, places: List<OverviewPlace>, fullSize: Boolean = false) {
+internal fun addOverviewLayers(
+    ctx: Context,
+    style: Style,
+    places: List<OverviewPlace>,
+    dark: Boolean,
+    fullSize: Boolean = false,
+) {
     addEndpointDotImages(ctx, style, withBrief = true)
     addPlacePinImages(ctx, style)
     style.addSource(GeoJsonSource(OVERVIEW_SOURCE, overviewCollection(places)))
-    val layer = labeledSymbolLayer(ctx, OVERVIEW_LAYER, OVERVIEW_SOURCE).withProperties(
+    val layer = labeledSymbolLayer(dark, OVERVIEW_LAYER, OVERVIEW_SOURCE).withProperties(
         // Labels arrive at street zoom in either mode — a name is worth showing where a street
         // is, not over a whole country, however big its pin. Emptied rather than faded out: an
         // invisible label still takes part in collision and would push its neighbours' names
@@ -718,7 +741,7 @@ internal fun MapLibreTripMap(
                 point != null
             }
         },
-        onStyleLoaded = { ctx, map, style ->
+        onStyleLoaded = { ctx, map, style, dark ->
             applied.pins = origin to destination
             applied.places = places
             // Whatever the screen was asking for when the map arrived is already answered by the
@@ -726,14 +749,14 @@ internal fun MapLibreTripMap(
             applied.center = center
             // The overview map's own layers, ids and all — a style belongs to one MapView, so the
             // names can't collide, and the places here are exactly that map's field of pins.
-            addOverviewLayers(ctx, style, places)
+            addOverviewLayers(ctx, style, places, dark)
             style.addSource(
                 GeoJsonSource(
                     TRIP_MARKER_SOURCE,
                     tripMarkerCollection(origin, destination, originLabel, destinationLabel),
                 ),
             )
-            style.addLayer(labeledSymbolLayer(ctx, TRIP_MARKER_LAYER, TRIP_MARKER_SOURCE))
+            style.addLayer(labeledSymbolLayer(dark, TRIP_MARKER_LAYER, TRIP_MARKER_SOURCE))
             frameTripMap(map, origin, destination, places, opening = true)
             // The opening frame lands before the idle listener is there to hear it, so where the map
             // came up is stated outright — otherwise nothing knows the centre until the first pan.

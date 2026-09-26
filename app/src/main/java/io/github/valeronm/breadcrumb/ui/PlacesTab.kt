@@ -33,7 +33,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -255,10 +254,10 @@ private fun PlacesMapPage(
     onOpenPlace: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    // The theme's shade until the reader picks one here: an overview of streets reads better light
-    // for some, and the app theme is a choice about the chrome, not about the map.
-    val themeDark = isSystemInDarkTheme()
-    var dark by rememberSaveable { mutableStateOf(AppSettings.placesMapDark(context) ?: themeDark) }
+    // The app theme is a choice about the chrome, not about the map.
+    var picked by remember { mutableStateOf(AppSettings.placesMapDark(context)) }
+    val dark = picked ?: isSystemInDarkTheme()
+    val camera = remember { CameraCarry() }
     // Card padding keeps the texture-mode map off the back-gesture edge strips.
     Card(
         Modifier
@@ -283,12 +282,15 @@ private fun PlacesMapPage(
                         places = mapPlaces,
                         frameKey = homeRequest,
                         onOpen = onOpenPlace,
+                        camera = camera,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
                 MapShadeToggle(dark) {
-                    dark = !dark
-                    AppSettings.setPlacesMapDark(context, dark)
+                    val next = !dark
+                    camera.carryToNextMap()
+                    picked = next
+                    AppSettings.setPlacesMapDark(context, next)
                 }
             }
             MapFilterChip(
@@ -492,16 +494,13 @@ private fun visitPhrase(summary: PlaceResolver.PlaceSummary): String =
 private fun placeScrubberStops(listed: List<PlaceResolver.PlaceSummary>): List<ScrollStop<PlaceResolver.PlaceSummary>> =
     remember(listed) { listed.mapIndexed { index, summary -> ScrollStop(summary, index) } }
 
-/**
- * Switches the Places map between its light and dark basemap. Bottom-right, clear of the filter chip
- * top-left, the compass top-right and the attribution bottom-left; lifted over the zoom readout
- * where dev builds show one.
- */
 @Composable
 private fun BoxScope.MapShadeToggle(dark: Boolean, onToggle: () -> Unit) {
     SmallFloatingActionButton(
         onClick = onToggle,
         containerColor = MaterialTheme.colorScheme.surface,
+        // Bottom-right, clear of the filter chip top-left, the compass top-right and the attribution
+        // bottom-left; lifted over the zoom readout where dev builds show one.
         modifier = Modifier
             .align(Alignment.BottomEnd)
             .padding(end = 12.dp, bottom = if (BuildConfig.DEV_TOOLS) 44.dp else 12.dp),

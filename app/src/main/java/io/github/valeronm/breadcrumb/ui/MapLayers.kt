@@ -1,6 +1,5 @@
 package io.github.valeronm.breadcrumb.ui
 
-import android.content.Context
 import com.google.gson.JsonObject
 import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.GreatCircle
@@ -145,29 +144,26 @@ internal fun markerSymbolLayer(id: String, source: String): SymbolLayer =
 private const val PLACE_LABEL_OFFSET_EM = 1.2f
 
 /** Labeled pin layer, shared by every map that draws a place: a marker plus a label under it. */
-internal fun labeledSymbolLayer(ctx: Context, id: String, source: String): SymbolLayer {
-    val dark = isDarkUi(ctx)
-    return markerSymbolLayer(id, source).withProperties(
-        // Named features carry a label under the pin; other features have an empty string.
-        PropertyFactory.textField(Expression.get(LABEL_KEY)),
-        PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
-        PropertyFactory.textSize(12f),
-        PropertyFactory.textColor(if (dark) "#C8CFC6" else "#38423B"),
-        PropertyFactory.textHaloColor(if (dark) "#14211A" else "#F0F2EE"),
-        PropertyFactory.textHaloWidth(1.2f),
-        PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
-        PropertyFactory.textOffset(arrayOf(0f, PLACE_LABEL_OFFSET_EM)),
-        PropertyFactory.textOptional(true),
-        // Context recedes twice over: a muted pin gives up most of its chroma in the bitmap it
-        // names *and* some of its ink here, which is what separates it from its neighbours' circles
-        // as well as from the subject. The label can only give up ink, being neutral in both themes
-        // with no chroma to drain. Keyed on the property being present, so a collection that never
-        // writes it — the all-places overview, a track's end places — is unaffected without knowing
-        // the rule exists.
-        PropertyFactory.iconOpacity(mutedOpacity()),
-        PropertyFactory.textOpacity(mutedOpacity()),
-    )
-}
+internal fun labeledSymbolLayer(dark: Boolean, id: String, source: String): SymbolLayer = markerSymbolLayer(id, source).withProperties(
+    // Named features carry a label under the pin; other features have an empty string.
+    PropertyFactory.textField(Expression.get(LABEL_KEY)),
+    PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
+    PropertyFactory.textSize(12f),
+    PropertyFactory.textColor(if (dark) "#C8CFC6" else "#38423B"),
+    PropertyFactory.textHaloColor(if (dark) "#14211A" else "#F0F2EE"),
+    PropertyFactory.textHaloWidth(1.2f),
+    PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
+    PropertyFactory.textOffset(arrayOf(0f, PLACE_LABEL_OFFSET_EM)),
+    PropertyFactory.textOptional(true),
+    // Context recedes twice over: a muted pin gives up most of its chroma in the bitmap it
+    // names *and* some of its ink here, which is what separates it from its neighbours' circles
+    // as well as from the subject. The label can only give up ink, being neutral in both themes
+    // with no chroma to drain. Keyed on the property being present, so a collection that never
+    // writes it — the all-places overview, a track's end places — is unaffected without knowing
+    // the rule exists.
+    PropertyFactory.iconOpacity(mutedOpacity()),
+    PropertyFactory.textOpacity(mutedOpacity()),
+)
 
 private fun mutedOpacity(): Expression = Expression.switchCase(
     Expression.has(MUTED_KEY),

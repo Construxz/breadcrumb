@@ -66,7 +66,7 @@ internal fun MapLibreJourneyMap(
                 key != null
             }
         },
-        onStyleLoaded = { ctx, map, style ->
+        onStyleLoaded = { ctx, map, style, dark ->
             applied.collection = collection
             applied.places = places
             applied.frameKey = frameKey
@@ -80,7 +80,7 @@ internal fun MapLibreJourneyMap(
                     PropertyFactory.lineColor(Expression.get(JOURNEY_COLOR_KEY)),
                 ),
             )
-            addOverviewLayers(ctx, style, places, fullSize = true)
+            addOverviewLayers(ctx, style, places, dark, fullSize = true)
             frame(map, lines, places)
         },
         onUpdate = { map, style ->
