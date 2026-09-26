@@ -348,6 +348,16 @@ the vehicle's type drops it. Bluetooth needs `BLUETOOTH_CONNECT`, asked where a 
 vehicle rather than on the arming ladder — the one permission not hung off turning recording on,
 because it serves a feature the user opts into later, and the recorder runs complete without it.
 
+**A place can have links too** (`place_links`, `ConnectionRepository`), and there they decide
+nothing: while one is connected the recorder's notification says so ("At Home (HomeNet)", a
+vehicle's line outranking it), and no connection of a place's link is logged, since nothing reads
+one back. The two link tables are kept apart because only a vehicle's feed a verdict and carry a
+log; what spans them is the rule **one device or network stands for one thing** — the unique index
+holds it inside each table and `ConnectionRepository` across them. The vehicle and place editors
+refuse one already taken; Settings → Connections lists every link with what it stands for and is
+the one screen that moves one, taking it from its old owner. The place editor's links write at once
+rather than on Done, being a table of their own that moves no seed.
+
 **State bridge:** `location/TrackingStatus` is a process-wide `MutableStateFlow` the service writes
 and the UI collects — this is how live recording state reaches Compose without binding to the service.
 

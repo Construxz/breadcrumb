@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="connections_confirm_add">Добавить</string>
+    <string name="connections_kind_bluetooth">Bluetooth</string>
+    <string name="connections_kind_wifi">Wi-Fi</string>
+    <string name="connections_add_bluetooth">Добавить устройство Bluetooth</string>
+    <string name="connections_add_current_wifi">Добавить текущую сеть Wi-Fi</string>
+    <string name="connections_add_wifi_by_name">Ввести название сети Wi-Fi</string>
+    <string name="connections_wifi_name">Название сети Wi-Fi</string>
+    <string name="connections_no_wifi">Телефон не подключён к Wi-Fi, или Android не показывает название сети</string>
+    <string name="connections_remove_link">Удалить</string>
+    <string name="connections_title">Подключения</string>
+    <string name="connections_description">Устройства Bluetooth и сети Wi-Fi, которые обозначают один из ваших транспортов или мест. Каждое обозначает только что-то одно.</string>
+    <string name="connections_empty">Пока ничего не добавлено. Добавьте устройство или сеть здесь, в транспорте или в месте.</string>
+    <string name="connections_assign">Обозначает</string>
+    <string name="connections_vehicles">Транспорт</string>
+    <string name="connections_places">Места</string>
+    <string name="connections_no_owners">Сначала добавьте транспорт или назовите место.</string>
+    <string name="connections_no_paired_devices">Нет сопряжённых устройств. Сначала выполните сопряжение в настройках Bluetooth телефона.</string>
+    <string name="connections_link_taken">Это уже использует транспорт или место. Перенести можно в Настройки → Подключения.</string>
+    <string name="connections_place_links">Распознаётся по</string>
+    <string name="connections_place_links_description">Например, по его Wi-Fi. Пока запись включена, уведомление показывает, когда телефон к нему подключён.</string>
+    <string name="connections_place_links_none">Пока ни по чему не распознаётся</string>
+    <string name="connections_done">Готово</string>
+    <plurals name="connections_place_link_count">
+        <item quantity="one">Распознаётся по %d подключению</item>
+        <item quantity="few">Распознаётся по %d подключениям</item>
+        <item quantity="many">Распознаётся по %d подключениям</item>
+        <item quantity="other">Распознаётся по %d подключения</item>
+    </plurals>
+</resources>

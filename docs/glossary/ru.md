@@ -34,6 +34,7 @@ Sections and order follow `en.md`, so the two files read side by side.
 | point | точка | Rejected ones are *отклонённые* — never the calque *шумные* (which reads as loud, not as measurement noise) nor *выбросы* (which reads as emissions); a guessed one is *приблизительное местоположение*. |
 | activity | активность | Where a settings sentence explains what is detected, «способ передвижения» may carry it — that names the *type*, not the concept. The **inline forms** of the carrier-borne types are headed by the trip's own noun — «поездка на велосипеде», «поездка на такси» — while the rest are bare («ходьба», «перелёт»): the sentences those forms drop into are about the trip, and a bare «велосипед» cannot be their subject. |
 | vehicle | транспорт | Used as a countable noun on the settings page («Добавить транспорт»); «транспортное средство» is correct but too long for a title. In a sentence about one vehicle by name, the name goes in «кавычки». |
+| connection | подключение | *Подключения* is the Settings page, the word the vehicle rows already count in. |
 | movement | движение | The state, and the *Движение* activity label. A **counted stretch** is *перемещение* («перемещения с перерывом короче…») — the word names a piece of movement here, not a trip, which is why its rejection as trip's name doesn't ban it. |
 
 ### A stay
