@@ -30,4 +30,7 @@
         <item quantity="one">Recognised by %d connection</item>
         <item quantity="other">Recognised by %d connections</item>
     </plurals>
+    <string name="connections_seen_title">Recently connected Wi-Fi</string>
+    <string name="connections_seen_description">Networks your phone connected to while recording was on, in the last two weeks. Tap one to say what it stands for.</string>
+    <string name="connections_seen_at">Connected at %1$s</string>
 </resources>

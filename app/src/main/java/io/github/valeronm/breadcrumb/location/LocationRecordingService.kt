@@ -927,17 +927,16 @@ class LocationRecordingService : Service() {
 
     /**
      * (Re)starts the vehicle watch: on arming, and whenever the vehicle or place settings change
-     * what there is to watch for. Runs only while some link is registered, so an install with no
-     * vehicles and no place links registers nothing. Whatever the log still holds as connected predates this watch and nothing
+     * what there is to watch for. It runs whenever the recorder is armed, links or none, because the
+     * Wi-Fi networks it sees connect are what Settings → Connections offers to assign. Whatever the log still holds as connected predates this watch and nothing
      * can vouch for it, so it is closed first; the watch's own first report reopens what really is.
      */
     fun refreshVehicleWatch() {
         scope.launch {
-            val watching = vehicles.linksByKey().isNotEmpty() || connections.placeLinksByKey().isNotEmpty()
             closeVehicleLinks()
             withContext(Dispatchers.Main) {
                 vehicleWatch.stop()
-                if (watching && armed) vehicleWatch.start()
+                if (armed) vehicleWatch.start()
             }
         }
     }
@@ -952,11 +951,13 @@ class LocationRecordingService : Service() {
 
     /**
      * A link changed — logged only when it is one a vehicle was set up with. A place's link is not
-     * logged at all: nothing reads it back, so it only moves the notification's line.
+     * logged at all: nothing reads it back, so it only moves the notification's line. Any Wi-Fi
+     * connecting is noted by name for the Connections list, registered or not.
      */
     private fun onVehicleLink(kind: VehicleLinkKind, key: String, connected: Boolean) {
         val at = now()
         scope.launch {
+            if (kind == VehicleLinkKind.WIFI && connected) connections.noteSeen(key, at, moving = openTrack != null)
             val link = vehicles.linksByKey()[kind to key]
             if (link == null) {
                 val placeLink = connections.placeLinksByKey()[kind to key] ?: return@launch

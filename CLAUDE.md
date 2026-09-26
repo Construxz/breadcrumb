@@ -335,7 +335,7 @@ first activity reading arriving onto a recording "Moving" track names it rather 
 `VehicleRepository`). A vehicle is a name and an activity type plus the links that stand for it —
 Bluetooth devices by address, Wi-Fi networks by name, any mix — so the carrier-classifier rule above
 is not broken: the recorder never guesses a car, it only notices that the one the user named was
-connected. While armed and while any link exists, `VehicleWatch` reports connection changes
+connected. While armed, `VehicleWatch` reports connection changes
 (an ACL broadcast and a Wi-Fi network callback, both event-driven, nothing polled) and the service
 logs only those of registered links into `link_connections`, as changes, purged with the discarded
 tracks' retention. The verdict is taken **at finish, in `closeOrDelete`**, over the track's span as
@@ -357,6 +357,16 @@ holds it inside each table and `ConnectionRepository` across them. The vehicle a
 refuse one already taken; Settings → Connections lists every link with what it stands for and is
 the one screen that moves one, taking it from its old owner. The place editor's links write at once
 rather than on Done, being a table of their own that moves no seed.
+
+**The Wi-Fi networks the phone joins are noted even when nothing stands for them** (`seen_networks`,
+`SeenNetworkDao`), because Android lets no app read the phone's saved networks, and without that
+list a network could only be added while connected to it. Every Wi-Fi connection while armed notes
+the name, the time, and — when no track is open — the named place the last track ended in, which is
+where the timeline stands; connecting on the move keeps the place noted before. Connections lists the
+ones nothing stands for yet with that place as a pre-ticked suggestion. That is why the watch runs
+whenever the recorder is armed rather than only while a link exists. Bluetooth needs no such list —
+the paired devices are readable — so nothing about an unregistered device is kept. The names never
+leave the phone and are purged with the discarded tracks' retention.
 
 **State bridge:** `location/TrackingStatus` is a process-wide `MutableStateFlow` the service writes
 and the UI collects — this is how live recording state reaches Compose without binding to the service.
