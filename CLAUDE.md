@@ -937,7 +937,12 @@ why the workflow is the only thing standing between a forgotten bump and Play.
   or the pin of the place being named — never wherever the map happens to be looking**: the form's
   own place list sorts by the map centre because re-ordering rows the device already holds discloses
   nothing, and that is the whole reason the two use different anchors. The ODbL credit in Settings
-  and at the results is a licence requirement, like the GeoNames one. There is no server sync (a possible future feature — the
+  and at the results is a licence requirement, like the GeoNames one. The Places list's **street
+  addresses** (`data/PlaceAddresses`, Photon's reverse lookup) ride on the same switch plus one of
+  their own that is off by default, since they send each listed place's *pin*: looked up as a row
+  scrolls into view, one request at a time and spaced out, kept on the phone keyed by the pin, and
+  wiped when their switch goes off. Where the house number sits is the address's country's
+  convention, not the reader's language (`AddressLine`). There is no server sync (a possible future feature — the
   Online services section of Settings → Privacy is where server URL/key fields would go).
 - **The Protomaps hosted-API key is not committed.** It lives in `local.properties` as
   `protomapsApiKey=…` (gitignored), surfaced as `BuildConfig.PROTOMAPS_API_KEY`, and injected into the

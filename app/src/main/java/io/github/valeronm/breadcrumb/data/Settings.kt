@@ -33,6 +33,7 @@ object Settings {
     private const val KEY_APP_LOCK_TRUSTS_KEYGUARD = "app_lock_trusts_keyguard"
     private const val KEY_BLOCK_SCREENSHOTS = "block_screenshots"
     private const val KEY_ONLINE_PLACE_SEARCH = "online_place_search"
+    private const val KEY_PLACE_ADDRESSES = "place_addresses"
     private const val KEY_DEPARTURE_FENCE = "departure_fence"
     private const val KEY_DEPARTURE_MOTION = "departure_motion"
     private const val KEY_DEPARTURE_CONTINUOUS = "departure_continuous"
@@ -109,6 +110,15 @@ object Settings {
 
     fun setOnlinePlaceSearch(context: Context, enabled: Boolean) {
         prefs(context).edit { putBoolean(KEY_ONLINE_PLACE_SEARCH, enabled) }
+    }
+
+    /** Whether the Places list looks up and shows its places' street addresses ([PlaceAddresses]).
+     *  Off by default: it sends each place's pin to the search service. */
+    fun showPlaceAddresses(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_PLACE_ADDRESSES, false)
+
+    fun setShowPlaceAddresses(context: Context, enabled: Boolean) {
+        prefs(context).edit { putBoolean(KEY_PLACE_ADDRESSES, enabled) }
     }
 
     /**

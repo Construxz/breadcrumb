@@ -114,4 +114,5 @@
         <item quantity="one">%d visit</item>
         <item quantity="other">%d visits</item>
     </plurals>
+    <string name="place_row_address">%1$s · %2$s</string>
 </resources>

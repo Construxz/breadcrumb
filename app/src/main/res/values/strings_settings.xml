@@ -136,4 +136,6 @@
     <string name="logs_share">Share logs</string>
     <string name="logs_clear">Clear logs</string>
     <string name="logs_empty">No logs yet. They appear here once recording is armed and picks up movement.</string>
+    <string name="privacy_place_addresses">Addresses of places</string>
+    <string name="privacy_place_addresses_sub">Shows the street address of each place in the Places list. Sends each place\'s location to the same service.</string>
 </resources>

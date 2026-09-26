@@ -54,6 +54,10 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   and where the place is on the map.
   You can turn the search off under Settings → Privacy.
   The app then searches only the list of cities built into it, and suggests no names.
+- **Addresses of your places**, if you turn them on under Settings → Privacy. The Places list can
+  show each place's street address. For that the app sends the location of each place it shows to
+  the same service. The app keeps the addresses on your phone, so it asks for each place only once.
+  This is off until you turn it on. Turning it off also deletes the addresses the app kept.
 - **What you export.** A trip shared as a GPX file, or a backup of your whole history, goes
   wherever you send it. The app never sends it anywhere on its own.
 - **The log**, if you share it. The app keeps a log on the phone for troubleshooting. It reaches

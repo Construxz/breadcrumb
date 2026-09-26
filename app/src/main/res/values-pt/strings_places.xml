@@ -86,4 +86,5 @@
         <item quantity="one">%d extremo</item>
         <item quantity="other">%d extremos</item>
     </plurals>
+    <string name="place_row_address">%1$s · %2$s</string>
 </resources>
