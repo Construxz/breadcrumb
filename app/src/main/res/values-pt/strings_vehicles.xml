@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vehicles_title">Veículos</string>
+    <string name="vehicles_description">Uma viagem feita enquanto um dos seus veículos está ligado fica com o tipo e o nome desse veículo.</string>
+    <string name="vehicles_add">Adicionar veículo</string>
+    <string name="vehicles_confirm_add">Adicionar</string>
+    <string name="vehicles_name">Nome</string>
+    <string name="vehicles_no_links">Ainda não é reconhecido por nada</string>
+    <plurals name="vehicles_link_count">
+        <item quantity="one">Reconhecido por %d ligação</item>
+        <item quantity="other">Reconhecido por %d ligações</item>
+    </plurals>
+    <string name="vehicles_type">Tipo</string>
+    <string name="vehicles_links">Reconhecido por</string>
+    <string name="vehicles_links_description">O Bluetooth dele, o hotspot Wi-Fi dele, ou ambos. A app só regista estas ligações enquanto a gravação está ativa, e guarda-as no telemóvel.</string>
+    <string name="vehicles_kind_bluetooth">Bluetooth</string>
+    <string name="vehicles_kind_wifi">Wi-Fi</string>
+    <string name="vehicles_add_bluetooth">Adicionar dispositivo Bluetooth</string>
+    <string name="vehicles_add_current_wifi">Adicionar a rede Wi-Fi atual</string>
+    <string name="vehicles_add_wifi_by_name">Introduzir o nome de uma rede Wi-Fi</string>
+    <string name="vehicles_wifi_name">Nome da rede Wi-Fi</string>
+    <string name="vehicles_no_wifi">O telemóvel não está numa rede Wi-Fi, ou o Android não mostra o nome dela</string>
+    <string name="vehicles_no_paired_devices">Não há dispositivos emparelhados. Emparelhe primeiro o veículo nas definições de Bluetooth do telemóvel.</string>
+    <string name="vehicles_link_taken">Outro veículo já usa isto</string>
+    <string name="vehicles_remove_link">Remover</string>
+    <string name="vehicles_delete">Eliminar veículo</string>
+    <string name="vehicles_delete_text">As viagens feitas em %1$s mantêm o tipo.</string>
+    <string name="vehicles_delete_confirm">Eliminar</string>
+</resources>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  VehiclesScreen: Settings → Vehicles, the list and one vehicle's editor. A vehicle is what the user
+  travels in, recognised by a Bluetooth device or a Wi-Fi network it has.
+-->
+<resources>
+    <string name="vehicles_title">Vehicles</string>
+    <string name="vehicles_description">A trip made while one of your vehicles is connected gets that vehicle\'s type and name.</string>
+    <string name="vehicles_add">Add vehicle</string>
+    <string name="vehicles_confirm_add">Add</string>
+    <string name="vehicles_name">Name</string>
+    <string name="vehicles_no_links">Not recognised by anything yet</string>
+    <plurals name="vehicles_link_count">
+        <item quantity="one">Recognised by %d connection</item>
+        <item quantity="other">Recognised by %d connections</item>
+    </plurals>
+    <string name="vehicles_type">Type</string>
+    <string name="vehicles_links">Recognised by</string>
+    <string name="vehicles_links_description">Its Bluetooth, its Wi-Fi hotspot, or both. The app notes these connections only while recording is on, and keeps them on the phone.</string>
+    <string name="vehicles_kind_bluetooth">Bluetooth</string>
+    <string name="vehicles_kind_wifi">Wi-Fi</string>
+    <string name="vehicles_add_bluetooth">Add Bluetooth device</string>
+    <string name="vehicles_add_current_wifi">Add the Wi-Fi you are on</string>
+    <string name="vehicles_add_wifi_by_name">Enter a Wi-Fi name</string>
+    <string name="vehicles_wifi_name">Wi-Fi name</string>
+    <string name="vehicles_no_wifi">The phone is not on a Wi-Fi network, or Android is not showing its name</string>
+    <string name="vehicles_no_paired_devices">No paired devices. Pair the vehicle in the phone\'s Bluetooth settings first.</string>
+    <string name="vehicles_link_taken">Another vehicle already uses this</string>
+    <string name="vehicles_remove_link">Remove</string>
+    <string name="vehicles_delete">Delete vehicle</string>
+    <string name="vehicles_delete_text">Trips made in %1$s keep their type.</string>
+    <string name="vehicles_delete_confirm">Delete</string>
+</resources>

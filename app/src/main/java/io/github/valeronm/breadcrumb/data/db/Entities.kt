@@ -63,6 +63,13 @@ data class Track(
      * devices that no pass ever cleared.
      */
     val needsReview: Boolean = false,
+    /**
+     * The [Vehicle] the track was travelled in, or null for none — set when the track finishes
+     * while one of that vehicle's links was connected for most of it, or by hand. No foreign key,
+     * like a derived cluster's place: adding one would rebuild this table, and a vehicle delete
+     * clears it by hand ([VehicleDao.clearVehicle]).
+     */
+    val vehicleId: Long? = null,
 )
 
 @Entity(
@@ -299,4 +306,68 @@ data class TrackSummary(
     /** [Track.source]: who wrote the fixes. Undefaulted like the columns beside it — a projection
      *  that leaves it out reads as a track whose writer is unknown, which is a claim, not a gap. */
     val source: String?,
+)
+
+/**
+ * Something the user travels in, as they named it — a car, a motorbike, a boat. What the recorder
+ * learns from it is its [activityType] (an `ActivityType` name, like [Track.activityType]): a track
+ * travelled with the vehicle connected finishes under that label and carries the vehicle's id.
+ * Nothing about a vehicle is detected; every field is what the user said.
+ */
+@Entity(tableName = "vehicles")
+data class Vehicle(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val activityType: String,
+)
+
+/**
+ * One thing the phone connects to that means "in this vehicle": a Bluetooth device (by its
+ * address) or a Wi-Fi network (by its name), the vehicle's own hotspot being the second kind. A
+ * vehicle may have any mix of them. [key] is unique per [kind], since one device standing for two
+ * vehicles would make the answer a guess. [label] is what the user was shown when adding it.
+ */
+@Entity(
+    tableName = "vehicle_links",
+    foreignKeys = [
+        ForeignKey(
+            entity = Vehicle::class,
+            parentColumns = ["id"],
+            childColumns = ["vehicleId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("vehicleId"), Index(value = ["kind", "key"], unique = true)],
+)
+data class VehicleLink(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val vehicleId: Long,
+    /** `bluetooth` or `wifi` — the link's `VehicleLinkKind.code`. */
+    val kind: String,
+    val key: String,
+    val label: String,
+)
+
+/**
+ * A link connecting or disconnecting, written by the recorder while armed — and only for links the
+ * user registered, so nothing about any other device or network is kept. Short-lived: read when a
+ * track finishes and purged with the discarded tracks' retention.
+ */
+@Entity(
+    tableName = "link_connections",
+    foreignKeys = [
+        ForeignKey(
+            entity = VehicleLink::class,
+            parentColumns = ["id"],
+            childColumns = ["linkId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("linkId"), Index("atMs")],
+)
+data class LinkConnection(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val linkId: Long,
+    val atMs: Long,
+    val connected: Boolean,
 )

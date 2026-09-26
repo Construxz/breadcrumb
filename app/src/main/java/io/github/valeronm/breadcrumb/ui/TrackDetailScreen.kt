@@ -19,12 +19,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -176,6 +178,8 @@ internal fun TrackDetailScreen(
     // is keyed on that list: one kept across a reload names a different fix than the user tapped.
     var selectedIndex by remember(points) { mutableStateOf<Int?>(null) }
     var showTypeDialog by remember(trackId) { mutableStateOf(false) }
+    val vehicle by remember(trackId) { viewModel.vehicleOf(trackId) }.collectAsStateWithLifecycle(null)
+    val vehicles by viewModel.vehicles.collectAsStateWithLifecycle()
     var showSplitDialog by remember(trackId) { mutableStateOf(false) }
     // Whether this track can be cut at all — a caller that handles the split, and a track that has
     // finished, since a still-recording one's last edge is still moving.
@@ -187,10 +191,20 @@ internal fun TrackDetailScreen(
                 // The bar carries what the track *is*; when it happened is a line of its own below,
                 // where it reads at body size instead of as a caption under a title.
                 title = {
-                    Text(
-                        summary?.let { activityLabel(LocalContext.current, it.activityType) }
-                            ?: stringResource(R.string.track_title),
-                    )
+                    Column {
+                        Text(
+                            summary?.let { activityLabel(LocalContext.current, it.activityType) }
+                                ?: stringResource(R.string.track_title),
+                        )
+                        // The vehicle is a name the user gave, so it reads as said, under the type.
+                        vehicle?.let {
+                            Text(
+                                it.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 },
                 navigationIcon = { BackNavIcon(onBack) },
                 actions = {
@@ -379,6 +393,33 @@ internal fun TrackDetailScreen(
                         ) {
                             viewModel.setTrackActivity(trackId, option)
                             showTypeDialog = false
+                        }
+                    }
+                    // Choosing a vehicle is choosing its type too, which is why the two share a
+                    // dialog: a track in the car and a track typed as driving are one answer.
+                    if (vehicles.isNotEmpty()) {
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                        for (option in vehicles) {
+                            val type = ActivityType.ofName(option.activityType)
+                            OptionRow(
+                                icon = activityIcon(type),
+                                label = option.name,
+                                tint = activityColor(type),
+                                selected = option.id == vehicle?.id,
+                            ) {
+                                viewModel.setTrackVehicle(trackId, option)
+                                showTypeDialog = false
+                            }
+                        }
+                        if (vehicle != null) {
+                            OptionRow(
+                                icon = Icons.Filled.Close,
+                                label = stringResource(R.string.track_no_vehicle),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ) {
+                                viewModel.setTrackVehicle(trackId, null)
+                                showTypeDialog = false
+                            }
                         }
                     }
                 }

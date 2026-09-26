@@ -50,6 +50,7 @@
     <string name="channel_alerts">Problemas de gravação</string>
     <string name="channel_alerts_description">Mostrada quando a gravação automática deixa de responder</string>
 
+    <string name="notification_vehicle_connected">Em %1$s (%2$s)</string>
     <string name="notification_stop">Parar</string>
     <string name="notification_deaf_title">Deteção de atividade parada</string>
     <string name="notification_deaf_text">Podem falhar viagens ou começar tarde. Reiniciar o telemóvel costuma resolver.</string>
