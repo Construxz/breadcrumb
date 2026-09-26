@@ -75,7 +75,7 @@ internal fun MapLibreStyledMap(
                         val readZoom = { zoom.floatValue = map.cameraPosition.zoom.toFloat() }
                         if (BuildConfig.DEV_TOOLS) map.addOnCameraMoveListener(readZoom)
                         onMapReady(map)
-                        map.setStyle(Style.Builder().fromJson(loadProtomapsStyle(view.context))) { style ->
+                        map.setStyle(testBuildStyle(view.context)) { style ->
                             host.onStyleLoaded(view.context, map, style)
                             // The opening frame is a moveCamera, which lands before this listener
                             // exists to hear it.
@@ -302,6 +302,19 @@ private fun styleFlavor(ctx: Context): StyleFlavor {
 }
 
 private fun loadProtomapsStyle(ctx: Context): String = styleFlavor(ctx).json
+
+/**
+ * TEST BUILD ONLY — not part of any upstream proposal. A build made without a Protomaps key would
+ * draw no basemap at all, so it loads OpenFreeMap's keyless OpenStreetMap style instead (its glyph
+ * server carries the "Noto Sans Regular" stack the markers use).
+ */
+private fun testBuildStyle(ctx: Context): Style.Builder =
+    if (BuildConfig.PROTOMAPS_API_KEY.isBlank()) {
+        val flavor = if (isDarkUi(ctx)) "dark" else "liberty"
+        Style.Builder().fromUri("https://tiles.openfreemap.org/styles/$flavor")
+    } else {
+        Style.Builder().fromJson(loadProtomapsStyle(ctx))
+    }
 
 /**
  * The style's own `background` layer color — used as the pre-render placeholder so a style
