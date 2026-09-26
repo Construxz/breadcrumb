@@ -398,3 +398,28 @@ data class PlaceLink(
     val key: String,
     val label: String,
 )
+
+/**
+ * A Wi-Fi network the phone connected to while the recorder was armed, kept so the user can tie it
+ * to a vehicle or a place later, from anywhere — Android lets no app read the phone's own list of
+ * saved networks. [placeId] is the named place the timeline stood at when it last connected (null
+ * when a track was open or the stay there has no name): only the suggestion the list offers.
+ * Local and short-lived: purged with the discarded tracks' retention, never uploaded.
+ */
+@Entity(
+    tableName = "seen_networks",
+    foreignKeys = [
+        ForeignKey(
+            entity = Place::class,
+            parentColumns = ["id"],
+            childColumns = ["placeId"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
+    indices = [Index("placeId")],
+)
+data class SeenNetwork(
+    @PrimaryKey val ssid: String,
+    val lastSeenAt: Long,
+    val placeId: Long? = null,
+)

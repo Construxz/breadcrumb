@@ -12,8 +12,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Track::class, TrackPoint::class, Place::class,
         DerivedCluster::class, ClusterMember::class, DerivedInterval::class,
         Vehicle::class, VehicleLink::class, LinkConnection::class, PlaceLink::class,
+        SeenNetwork::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -22,6 +23,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun derivedDao(): DerivedDao
     abstract fun vehicleDao(): VehicleDao
     abstract fun placeLinkDao(): PlaceLinkDao
+    abstract fun seenNetworkDao(): SeenNetworkDao
 
     companion object {
         @Volatile
@@ -136,6 +138,21 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * v22 adds `seen_networks`: the Wi-Fi networks the phone connected to while armed, offered
+         * in Settings → Connections to tie to a vehicle or a place. Purely additive — one empty table.
+         */
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `seen_networks` (`ssid` TEXT NOT NULL, `lastSeenAt` INTEGER NOT NULL, " +
+                        "`placeId` INTEGER, PRIMARY KEY(`ssid`), FOREIGN KEY(`placeId`) REFERENCES `places`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE SET NULL )",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_seen_networks_placeId` ON `seen_networks` (`placeId`)")
+            }
+        }
+
+        /**
          * The list the builder spreads, in order; the next migration is appended here.
          *
          * v18 is the floor: a database older than that fails to open rather than migrating.
@@ -144,7 +161,7 @@ abstract class AppDatabase : RoomDatabase() {
          * `version` above never renumbers downward for the same reason, since every installed
          * database would then present itself as a downgrade.
          */
-        private val MIGRATIONS = arrayOf(MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
+        private val MIGRATIONS = arrayOf(MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22)
 
         fun get(context: Context): AppDatabase =
             instance ?: synchronized(this) {
