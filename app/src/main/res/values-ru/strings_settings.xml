@@ -109,4 +109,20 @@
     <string name="logs_share">Поделиться журналом</string>
     <string name="logs_clear">Очистить журнал</string>
     <string name="logs_empty">Журнал пока пуст. Он заполнится, когда запись включена и есть движение.</string>
+
+    <string name="geopulse_description">Отправляет записанные точки на ваш собственный сервер GeoPulse, как это делает OwnTracks</string>
+    <string name="geopulse_enable">Отправлять точки в GeoPulse</string>
+    <string name="geopulse_enable_sub">Только точки, записанные после включения</string>
+    <string name="geopulse_server">Адрес сервера</string>
+    <string name="geopulse_username">Имя пользователя</string>
+    <string name="geopulse_password">Пароль</string>
+    <string name="geopulse_device">Имя устройства</string>
+    <string name="geopulse_send_now">Отправить сейчас</string>
+    <string name="geopulse_status_off">Ничего не отправляется</string>
+    <string name="geopulse_status_sending">Отправка…</string>
+    <string name="geopulse_status_sent_through">Отправлено до %1$s</string>
+    <string name="geopulse_failure_not_configured">Укажите адрес сервера и имя пользователя</string>
+    <string name="geopulse_failure_unauthorized">Сервер отклонил имя пользователя или пароль</string>
+    <string name="geopulse_failure_unreachable">Не удалось связаться с сервером. Приложение попробует снова.</string>
+    <string name="geopulse_failure_http">Сервер ответил ошибкой %1$d. Приложение попробует снова.</string>
 </resources>

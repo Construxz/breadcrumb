@@ -136,4 +136,22 @@
     <string name="logs_share">Share logs</string>
     <string name="logs_clear">Clear logs</string>
     <string name="logs_empty">No logs yet. They appear here once recording is armed and picks up movement.</string>
+
+    <!-- GeoPulse: sending recorded points to a self-hosted server over OwnTracks' HTTP mode -->
+    <string name="geopulse_title" translatable="false">GeoPulse</string>
+    <string name="geopulse_description">Sends the points you record to your own GeoPulse server, the way OwnTracks does</string>
+    <string name="geopulse_enable">Send points to GeoPulse</string>
+    <string name="geopulse_enable_sub">Only points recorded after you switch this on</string>
+    <string name="geopulse_server">Server address</string>
+    <string name="geopulse_username">Username</string>
+    <string name="geopulse_password">Password</string>
+    <string name="geopulse_device">Device name</string>
+    <string name="geopulse_send_now">Send now</string>
+    <string name="geopulse_status_off">Nothing is sent</string>
+    <string name="geopulse_status_sending">Sending…</string>
+    <string name="geopulse_status_sent_through">Sent up to %1$s</string>
+    <string name="geopulse_failure_not_configured">Enter the server address and username</string>
+    <string name="geopulse_failure_unauthorized">The server refused the username or password</string>
+    <string name="geopulse_failure_unreachable">Couldn\'t reach the server. The app will try again.</string>
+    <string name="geopulse_failure_http">The server answered with error %1$d. The app will try again.</string>
 </resources>

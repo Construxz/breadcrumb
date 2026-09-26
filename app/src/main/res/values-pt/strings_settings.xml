@@ -107,4 +107,20 @@
     <string name="logs_share">Partilhar os registos</string>
     <string name="logs_clear">Limpar os registos</string>
     <string name="logs_empty">Ainda sem registos. Aparecem aqui assim que a gravação estiver armada e detetar movimento.</string>
+
+    <string name="geopulse_description">Envia os pontos que grava para o seu próprio servidor GeoPulse, como faz o OwnTracks</string>
+    <string name="geopulse_enable">Enviar pontos para o GeoPulse</string>
+    <string name="geopulse_enable_sub">Só os pontos gravados depois de ativar esta opção</string>
+    <string name="geopulse_server">Endereço do servidor</string>
+    <string name="geopulse_username">Nome de utilizador</string>
+    <string name="geopulse_password">Palavra-passe</string>
+    <string name="geopulse_device">Nome do dispositivo</string>
+    <string name="geopulse_send_now">Enviar agora</string>
+    <string name="geopulse_status_off">Nada é enviado</string>
+    <string name="geopulse_status_sending">A enviar…</string>
+    <string name="geopulse_status_sent_through">Enviado até %1$s</string>
+    <string name="geopulse_failure_not_configured">Introduza o endereço do servidor e o nome de utilizador</string>
+    <string name="geopulse_failure_unauthorized">O servidor recusou o nome de utilizador ou a palavra-passe</string>
+    <string name="geopulse_failure_unreachable">Não foi possível contactar o servidor. A app vai tentar de novo.</string>
+    <string name="geopulse_failure_http">O servidor respondeu com o erro %1$d. A app vai tentar de novo.</string>
 </resources>

@@ -37,6 +37,19 @@ interface TrackDao {
     @Insert
     suspend fun insertPoints(points: List<TrackPoint>)
 
+    /**
+     * The GeoPulse upload's queue: good points of [source] tracks timed after [after], oldest
+     * first. A one-shot read, never observed. The track filter runs first so the point walk stays
+     * on the `(trackId, timestamp)` index — only the open track and those ended since [after] can
+     * hold such a point, a track's end being its last good one.
+     */
+    @Query(
+        "SELECT * FROM track_points WHERE ignored = 0 AND timestamp > :after AND trackId IN " +
+            "(SELECT id FROM tracks WHERE source = :source AND (endedAt IS NULL OR endedAt > :after)) " +
+            "ORDER BY timestamp LIMIT :limit",
+    )
+    suspend fun pointsAfter(source: String, after: Long, limit: Int): List<TrackPoint>
+
     @Query("UPDATE tracks SET endedAt = :endedAt WHERE id = :trackId")
     suspend fun closeTrack(trackId: Long, endedAt: Long)
 
