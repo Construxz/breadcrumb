@@ -256,6 +256,8 @@ internal fun PlaceEditScreen(
                     if (aiming) AimOverlay()
                     MapCornerControls(
                         shade = shade,
+                        // A spot is already chosen here — see [MapCornerControls].
+                        location = null,
                         aiming = aiming,
                         aimDescription = stringResource(R.string.places_pin_aim),
                         confirmLabel = stringResource(R.string.places_pin_here),
