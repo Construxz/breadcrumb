@@ -3,11 +3,14 @@ package io.github.valeronm.breadcrumb
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import io.github.valeronm.breadcrumb.data.ConnectionRepository
+import io.github.valeronm.breadcrumb.data.DISCARDED_RETENTION_DAYS
 import io.github.valeronm.breadcrumb.data.DerivationStore
 import io.github.valeronm.breadcrumb.data.Settings
 import io.github.valeronm.breadcrumb.data.TrackRepository
 import io.github.valeronm.breadcrumb.data.TrackStats
 import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseUploader
+import io.github.valeronm.breadcrumb.data.VehicleRepository
 import io.github.valeronm.breadcrumb.domain.EdgeStayDetector
 import io.github.valeronm.breadcrumb.util.DebugLog
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -57,6 +60,12 @@ class App : Application() {
             val repository = TrackRepository(this@App)
             // Drop soft-deleted tracks whose Recently-deleted review window has lapsed.
             repository.purgeOldDiscarded()
+            // The vehicle links' log is read back only as far as a track's start, so it is kept no
+            // longer than the tracks a restore could still bring back.
+            val retention = System.currentTimeMillis() - DISCARDED_RETENTION_DAYS * 24 * 60 * 60 * 1000L
+            VehicleRepository(this@App).purgeConnections(retention)
+            // The networks the Connections list offers age out on the same clock.
+            ConnectionRepository(this@App).purgeSeen(retention)
             // Crash-cleanup of dangling tracks happens in the service's arm path. One-time
             // data backfills also go here when needed — see "Backfills" in CLAUDE.md.
             val edgeStayRuleMoved = Settings.edgeStayRuleVersion(this@App) < EdgeStayDetector.RULE_VERSION

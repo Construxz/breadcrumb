@@ -331,6 +331,43 @@ downstream being able to tell it was a guess. `FERRY` is a label the user applie
 first activity reading arriving onto a recording "Moving" track names it rather than splitting it
 — the supported way a track gets a specific name.
 
+**Vehicles are the user's statement, not a detection** (`VehicleEvidence`, `VehicleWatch`,
+`VehicleRepository`). A vehicle is a name and an activity type plus the links that stand for it —
+Bluetooth devices by address, Wi-Fi networks by name, any mix — so the carrier-classifier rule above
+is not broken: the recorder never guesses a car, it only notices that the one the user named was
+connected. While armed, `VehicleWatch` reports connection changes
+(an ACL broadcast and a Wi-Fi network callback, both event-driven, nothing polled) and the service
+logs only those of registered links into `link_connections`, as changes, purged with the discarded
+tracks' retention. The verdict is taken **at finish, in `closeOrDelete`**, over the track's span as
+recorded: a vehicle connected for at least `VehicleEvidence.MIN_SHARE` of it renames the track to
+its type — outranking the carrier witness's rename, since a named vehicle says *what* carried it —
+and stamps `tracks.vehicleId`, before the settle so the ceilings are the vehicle type's. Nothing on
+the fix path consults it. `vehicleId` carries no foreign key (a vehicle delete clears it by hand);
+merge keeps it only when both halves agree, split hands it to both, and a manual retype away from
+the vehicle's type drops it. Bluetooth needs `BLUETOOTH_CONNECT`, asked where a device is added to a
+vehicle rather than on the arming ladder — the one permission not hung off turning recording on,
+because it serves a feature the user opts into later, and the recorder runs complete without it.
+
+**A place can have links too** (`place_links`, `ConnectionRepository`), and there they decide
+nothing: while one is connected the recorder's notification says so ("At Home (HomeNet)", a
+vehicle's line outranking it), and no connection of a place's link is logged, since nothing reads
+one back. The two link tables are kept apart because only a vehicle's feed a verdict and carry a
+log; what spans them is the rule **one device or network stands for one thing** — the unique index
+holds it inside each table and `ConnectionRepository` across them. The vehicle and place editors
+refuse one already taken; Settings → Connections lists every link with what it stands for and is
+the one screen that moves one, taking it from its old owner. The place editor's links write at once
+rather than on Done, being a table of their own that moves no seed.
+
+**The Wi-Fi networks the phone joins are noted even when nothing stands for them** (`seen_networks`,
+`SeenNetworkDao`), because Android lets no app read the phone's saved networks, and without that
+list a network could only be added while connected to it. Every Wi-Fi connection while armed notes
+the name, the time, and — when no track is open — the named place the last track ended in, which is
+where the timeline stands; connecting on the move keeps the place noted before. Connections lists the
+ones nothing stands for yet with that place as a pre-ticked suggestion. That is why the watch runs
+whenever the recorder is armed rather than only while a link exists. Bluetooth needs no such list —
+the paired devices are readable — so nothing about an unregistered device is kept. The names never
+leave the phone and are purged with the discarded tracks' retention.
+
 **State bridge:** `location/TrackingStatus` is a process-wide `MutableStateFlow` the service writes
 and the UI collects — this is how live recording state reaches Compose without binding to the service.
 

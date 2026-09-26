@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ConnectionsScreen: Settings → Connections, every Bluetooth device and Wi-Fi network tied to a
+  vehicle or a place, and the pickers that add one — shared with the vehicle and place editors.
+-->
+<resources>
+    <string name="connections_confirm_add">Add</string>
+    <string name="connections_kind_bluetooth">Bluetooth</string>
+    <string name="connections_kind_wifi">Wi-Fi</string>
+    <string name="connections_add_bluetooth">Add Bluetooth device</string>
+    <string name="connections_add_current_wifi">Add the Wi-Fi you are on</string>
+    <string name="connections_add_wifi_by_name">Enter a Wi-Fi name</string>
+    <string name="connections_wifi_name">Wi-Fi name</string>
+    <string name="connections_no_wifi">The phone is not on a Wi-Fi network, or Android is not showing its name</string>
+    <string name="connections_remove_link">Remove</string>
+    <string name="connections_title">Connections</string>
+    <string name="connections_description">The Bluetooth devices and Wi-Fi networks that stand for one of your vehicles or places. Each one stands for one of them only.</string>
+    <string name="connections_empty">Nothing added yet. Add a device or network here, or from a vehicle or a place.</string>
+    <string name="connections_assign">Stands for</string>
+    <string name="connections_vehicles">Vehicles</string>
+    <string name="connections_places">Places</string>
+    <string name="connections_no_owners">Add a vehicle or name a place first.</string>
+    <string name="connections_no_paired_devices">No paired devices. Pair it in the phone\'s Bluetooth settings first.</string>
+    <string name="connections_link_taken">A vehicle or a place already uses this. Move it in Settings → Connections.</string>
+    <string name="connections_place_links">Recognised by</string>
+    <string name="connections_place_links_description">Its Wi-Fi, for example. While recording is on, the notification says when the phone is connected to it.</string>
+    <string name="connections_place_links_none">Not recognised by anything yet</string>
+    <string name="connections_done">Done</string>
+    <plurals name="connections_place_link_count">
+        <item quantity="one">Recognised by %d connection</item>
+        <item quantity="other">Recognised by %d connections</item>
+    </plurals>
+    <string name="connections_seen_title">Recently connected Wi-Fi</string>
+    <string name="connections_seen_description">Networks your phone connected to while recording was on, in the last two weeks. Tap one to say what it stands for.</string>
+    <string name="connections_seen_at">Connected at %1$s</string>
+</resources>
