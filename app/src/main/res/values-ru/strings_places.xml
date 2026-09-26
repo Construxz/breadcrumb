@@ -88,4 +88,6 @@
         <item quantity="other">%d раза</item>
     </plurals>
     <string name="place_row_address">%1$s · %2$s</string>
+    <string name="places_map_light">Показать светлую карту</string>
+    <string name="places_map_dark">Показать тёмную карту</string>
 </resources>
