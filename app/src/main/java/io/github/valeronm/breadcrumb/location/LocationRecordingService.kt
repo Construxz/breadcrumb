@@ -18,10 +18,10 @@ import io.github.valeronm.breadcrumb.data.AndroidDistance
 import io.github.valeronm.breadcrumb.data.ConnectionRepository
 import io.github.valeronm.breadcrumb.data.Settings
 import io.github.valeronm.breadcrumb.data.TrackRepository
-import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseUploader
 import io.github.valeronm.breadcrumb.data.VehicleRepository
 import io.github.valeronm.breadcrumb.data.db.PlaceLink
 import io.github.valeronm.breadcrumb.data.db.VehicleLink
+import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseUploader
 import io.github.valeronm.breadcrumb.domain.ActivityType
 import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.DepartureWatch

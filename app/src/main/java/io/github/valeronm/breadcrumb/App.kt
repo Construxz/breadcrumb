@@ -9,8 +9,8 @@ import io.github.valeronm.breadcrumb.data.DerivationStore
 import io.github.valeronm.breadcrumb.data.Settings
 import io.github.valeronm.breadcrumb.data.TrackRepository
 import io.github.valeronm.breadcrumb.data.TrackStats
-import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseUploader
 import io.github.valeronm.breadcrumb.data.VehicleRepository
+import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseUploader
 import io.github.valeronm.breadcrumb.domain.EdgeStayDetector
 import io.github.valeronm.breadcrumb.util.DebugLog
 import kotlinx.coroutines.CoroutineExceptionHandler
