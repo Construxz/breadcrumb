@@ -107,4 +107,30 @@
     <string name="logs_share">Partilhar os registos</string>
     <string name="logs_clear">Limpar os registos</string>
     <string name="logs_empty">Ainda sem registos. Aparecem aqui assim que a gravação estiver armada e detetar movimento.</string>
+
+    <string name="geopulse_description">Envia cada viagem que grava para o seu próprio servidor GeoPulse, depois de terminar</string>
+    <string name="geopulse_enable">Enviar viagens para o GeoPulse</string>
+    <string name="geopulse_enable_sub">Só as viagens que terminem depois de ativar esta opção</string>
+    <string name="geopulse_share_activity">Enviar a atividade</string>
+    <string name="geopulse_share_activity_sub">A pé, de bicicleta, de carro e assim por diante, como a viagem está marcada</string>
+    <string name="geopulse_share_places">Enviar nomes de locais</string>
+    <string name="geopulse_share_places_sub">Os nomes dos seus locais onde uma viagem começa ou termina</string>
+    <string name="geopulse_server">Endereço do servidor</string>
+    <string name="geopulse_username">Nome de utilizador</string>
+    <string name="geopulse_password">Palavra-passe</string>
+    <string name="geopulse_device">Nome do dispositivo</string>
+    <string name="geopulse_test">Testar ligação</string>
+    <string name="geopulse_test_hint">Verifica o endereço e o início de sessão. Nada é guardado no servidor.</string>
+    <string name="geopulse_testing">A testar…</string>
+    <string name="geopulse_test_ok">Ligado. O servidor aceita estes dados de acesso.</string>
+    <string name="geopulse_test_unreachable">Não foi possível contactar o servidor. Verifique o endereço e a ligação.</string>
+    <string name="geopulse_test_http">O servidor respondeu com o erro %1$d. Verifique o endereço.</string>
+    <string name="geopulse_send_now">Enviar agora</string>
+    <string name="geopulse_status_off">Nada é enviado</string>
+    <string name="geopulse_status_sending">A enviar…</string>
+    <string name="geopulse_status_sent_through">Enviado até %1$s</string>
+    <string name="geopulse_failure_not_configured">Introduza o endereço do servidor e o nome de utilizador</string>
+    <string name="geopulse_failure_unauthorized">O servidor recusou o nome de utilizador ou a palavra-passe</string>
+    <string name="geopulse_failure_unreachable">Não foi possível contactar o servidor. A app vai tentar de novo.</string>
+    <string name="geopulse_failure_http">O servidor respondeu com o erro %1$d. A app vai tentar de novo.</string>
 </resources>

@@ -16,6 +16,7 @@ import androidx.core.location.LocationRequestCompat
 import io.github.valeronm.breadcrumb.data.AndroidDistance
 import io.github.valeronm.breadcrumb.data.Settings
 import io.github.valeronm.breadcrumb.data.TrackRepository
+import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseUploader
 import io.github.valeronm.breadcrumb.domain.ActivityType
 import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.DepartureWatch
@@ -454,6 +455,8 @@ class LocationRecordingService : Service() {
                         repository.finishTrack(it.id, effect.endedAt, effect.renameTo)
                     }
                     openTrack = null
+                    // A trip is sent once it is finished and settled — this is that moment.
+                    GeoPulseUploader.sync(this@LocationRecordingService)
                 }
 
                 is Effect.RestartRegistration -> {
@@ -579,6 +582,9 @@ class LocationRecordingService : Service() {
         }
         DebugLog.i(TAG, "watchdog: re-registering transition updates")
         watchdogAlarm.schedule()
+        // The upload's guaranteed retry: a pass that failed offline is otherwise only retried by
+        // the next trip to close, and a phone parked for the night closes none.
+        GeoPulseUploader.sync(this)
         // Where a held reading is guaranteed a revisit. The GNSS tick that normally releases
         // one exists only while GPS is on, so this alarm is what makes "a held reading never
         // depends on GPS staying on" true of every path rather than of the ones thought of: with

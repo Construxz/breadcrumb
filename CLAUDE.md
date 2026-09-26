@@ -937,8 +937,24 @@ why the workflow is the only thing standing between a forgotten bump and Play.
   or the pin of the place being named — never wherever the map happens to be looking**: the form's
   own place list sorts by the map centre because re-ordering rows the device already holds discloses
   nothing, and that is the whole reason the two use different anchors. The ODbL credit in Settings
-  and at the results is a licence requirement, like the GeoNames one. There is no server sync (a possible future feature — the
-  Online services section of Settings → Privacy is where server URL/key fields would go).
+  and at the results is a licence requirement, like the GeoNames one. **The second exception is
+  the GeoPulse upload** (`data/geopulse/`), off by default: it sends each **finished, kept** recorder
+  track to a server the user names, one OwnTracks HTTP `location` message per good point
+  (`OwnTracksHttp`) under Basic auth — OwnTracks because it is the one GeoPulse ingest that keeps
+  extra fields (`ext` → telemetry), which is how the track's activity label reaches it, and the
+  one that turns a `poi` into a favourite, which is how the named places at a track's ends do
+  (read off the stored derivation, so an end is named exactly when the timeline names it). The
+  activity and the names each have a switch of their own beside the upload's. Its queue
+  is the database itself — good points of closed, undiscarded `recorded` tracks timed after a mark
+  in `GeoPulseSettings` — so nothing is copied aside and an offline day costs only the wait;
+  imports, typed trips and merge/split copies never reach it. Gaps inside a track are sent as they
+  are: GeoPulse draws a trip through a silence itself and only calls it a data gap after hours. It
+  starts at the moment it is switched on rather than exporting the history, and its connection
+  lives in a prefs file of its own so the password never rides the device transfer with
+  `settings.xml`. Passes run on a track closing, the watchdog tick, process start and the Settings
+  button — nothing on the recorder's hot path, and no job scheduler, the foreground service keeping
+  its network through Doze. The group sits on Settings → Privacy below Online services, and the
+  site's privacy page states it; there is no sync *from* a server.
 - **The Protomaps hosted-API key is not committed.** It lives in `local.properties` as
   `protomapsApiKey=…` (gitignored), surfaced as `BuildConfig.PROTOMAPS_API_KEY`, and injected into the
   bundled style at load time (`{PROTOMAPS_KEY}` placeholder in `assets/protomaps-{dark,light}.json`).
