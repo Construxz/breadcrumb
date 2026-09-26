@@ -19,6 +19,10 @@ app records, where it keeps it, and the few things that leave the phone.
   stops recording.
 - **What you enter yourself**: the places you name, their categories, the trips you add or edit
   by hand, and any GPX files you open in the app.
+- **When your vehicles connect**, if you set any up under Settings → Vehicles. You tell the app
+  which Bluetooth device or Wi-Fi network belongs to a vehicle. While recording is on, the app
+  notes when one of those connects and disconnects. It notes nothing about any other device or
+  network. It keeps these notes for two weeks and uses them to tell which vehicle a trip was in.
 
 Everything else the app shows is worked out on the phone from those records: the stays between
 trips, the places you return to, and journeys away from home.
@@ -50,8 +54,10 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   by name. That search sends the words you typed to [Photon](https://photon.komoot.io/). Once
   the trip's starting point is on the map, the search also sends that point, so the results are
   the ones most relevant to your trip. Until then it sends the destination, if that one is placed.
+  When you name a place, the app suggests names from the same search. It sends the words you typed
+  and where the place is on the map.
   You can turn the search off under Settings → Privacy.
-  The app then searches only the list of cities built into it.
+  The app then searches only the list of cities built into it, and suggests no names.
 - **What you export.** A trip shared as a GPX file, or a backup of your whole history, goes
   wherever you send it. The app never sends it anywhere on its own.
 - **The log**, if you share it. The app keeps a log on the phone for troubleshooting. It reaches
@@ -78,6 +84,8 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   the phone does not stop it to save power.
 - **Network.** For the map tiles and the optional place search above.
 - **Fingerprint.** For the app lock, if you turn it on.
+- **Nearby devices.** To list your paired Bluetooth devices when you add one to a vehicle, and to
+  notice it connecting. The app asks for it only then.
 
 ## The viewer
 

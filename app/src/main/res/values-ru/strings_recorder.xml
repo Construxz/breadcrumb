@@ -50,6 +50,7 @@
     <string name="channel_alerts">Проблемы с записью</string>
     <string name="channel_alerts_description">Показывается, когда автоматическая запись перестаёт отвечать</string>
 
+    <string name="notification_vehicle_connected">В «%1$s» (%2$s)</string>
     <string name="notification_stop">Остановить</string>
     <string name="notification_deaf_title">Распознавание активности не отвечает</string>
     <string name="notification_deaf_text">Поездки могут пропускаться или начинаться с опозданием. Обычно помогает перезагрузка телефона.</string>

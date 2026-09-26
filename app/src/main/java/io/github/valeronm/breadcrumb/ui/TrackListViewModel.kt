@@ -12,10 +12,12 @@ import io.github.valeronm.breadcrumb.data.PlaceRepository
 import io.github.valeronm.breadcrumb.data.Settings
 import io.github.valeronm.breadcrumb.data.TrackPoints
 import io.github.valeronm.breadcrumb.data.TrackRepository
+import io.github.valeronm.breadcrumb.data.VehicleRepository
 import io.github.valeronm.breadcrumb.data.db.DiscardedSummary
 import io.github.valeronm.breadcrumb.data.db.Place
 import io.github.valeronm.breadcrumb.data.db.TrackPoint
 import io.github.valeronm.breadcrumb.data.db.TrackSummary
+import io.github.valeronm.breadcrumb.data.db.Vehicle
 import io.github.valeronm.breadcrumb.data.export.BackupRepositories
 import io.github.valeronm.breadcrumb.domain.ActivityType
 import io.github.valeronm.breadcrumb.domain.CityAtlas
@@ -57,6 +59,26 @@ class TrackListViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = TrackRepository(app)
     private val placeRepository = PlaceRepository(app)
+    private val vehicleRepository = VehicleRepository(app)
+
+    /** Every vehicle the user set up, for the track detail's choice of one. */
+    val vehicles: StateFlow<List<Vehicle>> = vehicleRepository.observeVehicles()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun vehicleOf(trackId: Long): Flow<Vehicle?> = vehicleRepository.observeVehicleOf(trackId)
+
+    /**
+     * Puts a track in [vehicle] — which also says what it was, so the track takes the vehicle's
+     * activity — or in none, leaving its activity as it is.
+     */
+    fun setTrackVehicle(trackId: Long, vehicle: Vehicle?) {
+        viewModelScope.launch {
+            if (vehicle != null) {
+                ActivityType.ofName(vehicle.activityType)?.let { repository.setActivityType(trackId, it) }
+            }
+            vehicleRepository.setTrackVehicle(trackId, vehicle?.id)
+        }
+    }
     private val derivationStore = DerivationStore(app)
     private val backupRepositories =
         BackupRepositories(repository, placeRepository, derivationStore)
@@ -551,7 +573,10 @@ class TrackListViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setTrackActivity(trackId: Long, activityType: ActivityType) {
-        viewModelScope.launch { repository.setActivityType(trackId, activityType) }
+        viewModelScope.launch {
+            repository.setActivityType(trackId, activityType)
+            vehicleRepository.retyped(trackId, activityType)
+        }
     }
 
     suspend fun getPoints(trackId: Long): List<TrackPoint> = repository.pointsFor(trackId)
@@ -584,9 +609,9 @@ class TrackListViewModel(app: Application) : AndroidViewModel(app) {
         }
 
     /** Empty when the online search is switched off or fails ([OnlinePlaceSearch]). */
-    suspend fun searchOnline(query: String, near: Coordinate?): List<OnlinePlaceSearch.Hit> =
+    suspend fun searchOnline(query: String, near: Coordinate?, withinM: Double? = null): List<OnlinePlaceSearch.Hit> =
         withContext(Dispatchers.IO) {
-            OnlinePlaceSearch.search(getApplication(), query, near)
+            OnlinePlaceSearch.search(getApplication(), query, near, withinM)
         }
 
     private companion object {

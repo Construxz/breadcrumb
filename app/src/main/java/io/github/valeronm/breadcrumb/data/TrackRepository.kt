@@ -10,6 +10,7 @@ import io.github.valeronm.breadcrumb.data.db.Track
 import io.github.valeronm.breadcrumb.data.db.TrackEndpoints
 import io.github.valeronm.breadcrumb.data.db.TrackPoint
 import io.github.valeronm.breadcrumb.data.db.TrackSummary
+import io.github.valeronm.breadcrumb.data.db.Vehicle
 import io.github.valeronm.breadcrumb.data.export.GpxParser
 import io.github.valeronm.breadcrumb.domain.ActivityType
 import io.github.valeronm.breadcrumb.domain.Coordinate
@@ -23,6 +24,7 @@ import io.github.valeronm.breadcrumb.domain.StitchRule
 import io.github.valeronm.breadcrumb.domain.TrackBounds
 import io.github.valeronm.breadcrumb.domain.TrackOrigin
 import io.github.valeronm.breadcrumb.domain.TrackSplit
+import io.github.valeronm.breadcrumb.domain.VehicleEvidence
 import io.github.valeronm.breadcrumb.util.DebugLog
 import kotlinx.coroutines.flow.Flow
 
@@ -73,6 +75,8 @@ class TrackRepository(context: Context, private val db: AppDatabase = AppDatabas
      * change is historical and out of order — a [DerivationStore.rebuild].
      */
     private val derivation = DerivationStore(context, db)
+
+    private val vehicles = db.vehicleDao()
 
     fun observeSummaries(): Flow<List<TrackSummary>> = dao.observeSummaries()
 
@@ -425,7 +429,12 @@ class TrackRepository(context: Context, private val db: AppDatabase = AppDatabas
      * be tuned against real data — except a track of [KeepRule.PURGE_MAX_POINTS] or fewer points in
      * total (good + ignored), hard-deleted outright: empty of information, nothing to review either.
      */
-    private suspend fun closeOrDelete(track: Track, endedAt: Long, renameTo: ActivityType? = null) = db.withTransaction {
+    private suspend fun closeOrDelete(track: Track, endedAt: Long, carrierRename: ActivityType? = null) = db.withTransaction {
+        // A vehicle the user named outranks the carrier witness: the witness proves only that the
+        // track was carried, where a connected vehicle says what carried it. Judged on the span as
+        // recorded, before the edges settle, since the label decides the ceilings the settle uses.
+        val vehicle = vehicleFor(track.startedAt, endedAt)
+        val renameTo = vehicle?.let { ActivityType.ofName(it.activityType) } ?: carrierRename
         // The carrier rename runs first, inside the finish transaction, so everything after — jump
         // restores, edge stays, stats, keep verdict — judges the track the witness proved, not the
         // label detection guessed. Which labels rename, and to what, is the domain's decision
@@ -434,8 +443,10 @@ class TrackRepository(context: Context, private val db: AppDatabase = AppDatabas
         val relabel = renameTo?.takeIf { it.name != track.activityType }
         if (relabel != null) {
             dao.setActivityType(track.id, relabel.name)
-            DebugLog.i(TAG, "track ${track.id}: carrier evidence proven — finishing as ${relabel.name}")
+            val why = if (vehicle != null) "vehicle ${vehicle.id} connected" else "carrier evidence proven"
+            DebugLog.i(TAG, "track ${track.id}: $why — finishing as ${relabel.name}")
         }
+        if (vehicle?.id != track.vehicleId) vehicles.setTrackVehicle(track.id, vehicle?.id)
         val closing = if (relabel != null) track.copy(activityType = relabel.name) else track
         val stored = dao.allPointsFor(track.id)
         // The rename target's ceiling outranks the foot label's by construction, so the warm-up
@@ -472,11 +483,27 @@ class TrackRepository(context: Context, private val db: AppDatabase = AppDatabas
      * a proven carried journey on a foot label renames to UNKNOWN, "Moving") — this layer only
      * applies it, inside the finish transaction, with the warm-up jump flags restored under the new
      * label's ceiling. Null, the default and what every evidence-less path passes, leaves the finish
-     * untouched by the evidence channel.
+     * untouched by the evidence channel. A vehicle connected for most of the track outranks it —
+     * see [vehicleFor] — and is recorded on the row as well.
      */
     suspend fun finishTrack(trackId: Long, endedAt: Long, renameTo: ActivityType? = null) {
         val track = dao.track(trackId) ?: return
         closeOrDelete(track, endedAt, renameTo)
+    }
+
+    /**
+     * The vehicle `[startedAt, endedAt]` was travelled in, by [VehicleEvidence] over the connection
+     * log — null with no vehicles set up, which reads nothing but an empty table.
+     */
+    private suspend fun vehicleFor(startedAt: Long, endedAt: Long): Vehicle? {
+        val events = vehicles.connectionsBetween(startedAt - VehicleEvidence.LOOKBACK_MS, endedAt)
+        if (events.isEmpty()) return null
+        val id = VehicleEvidence.vehicleFor(
+            events.map { VehicleEvidence.Event(it.vehicleId, it.linkId, it.atMs, it.connected) },
+            startedAt,
+            endedAt,
+        ) ?: return null
+        return vehicles.vehicle(id)
     }
 
     /**
@@ -549,6 +576,9 @@ class TrackRepository(context: Context, private val db: AppDatabase = AppDatabas
                     startedAt = earlier.startedAt,
                     endedAt = later.endedAt,
                     source = earlier.source,
+                    // One trip in one vehicle, or a vehicle the two halves disagree on — which says
+                    // nothing either way, so neither is claimed.
+                    vehicleId = earlier.vehicleId.takeIf { it == later.vehicleId },
                 ),
             )
             dao.copyPointsInto(mergedId, earlierId)
@@ -622,6 +652,7 @@ class TrackRepository(context: Context, private val db: AppDatabase = AppDatabas
                 endedAt = endedAt,
                 // The half is the same recording, cut: a split never introduces a writer.
                 source = track.source,
+                vehicleId = track.vehicleId,
             )
             val secondId = dao.insertTrack(secondRow)
             dao.movePointsFrom(secondId, trackId, atTs)

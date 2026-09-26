@@ -331,6 +331,23 @@ downstream being able to tell it was a guess. `FERRY` is a label the user applie
 first activity reading arriving onto a recording "Moving" track names it rather than splitting it
 — the supported way a track gets a specific name.
 
+**Vehicles are the user's statement, not a detection** (`VehicleEvidence`, `VehicleWatch`,
+`VehicleRepository`). A vehicle is a name and an activity type plus the links that stand for it —
+Bluetooth devices by address, Wi-Fi networks by name, any mix — so the carrier-classifier rule above
+is not broken: the recorder never guesses a car, it only notices that the one the user named was
+connected. While armed and while any link exists, `VehicleWatch` reports connection changes
+(an ACL broadcast and a Wi-Fi network callback, both event-driven, nothing polled) and the service
+logs only those of registered links into `link_connections`, as changes, purged with the discarded
+tracks' retention. The verdict is taken **at finish, in `closeOrDelete`**, over the track's span as
+recorded: a vehicle connected for at least `VehicleEvidence.MIN_SHARE` of it renames the track to
+its type — outranking the carrier witness's rename, since a named vehicle says *what* carried it —
+and stamps `tracks.vehicleId`, before the settle so the ceilings are the vehicle type's. Nothing on
+the fix path consults it. `vehicleId` carries no foreign key (a vehicle delete clears it by hand);
+merge keeps it only when both halves agree, split hands it to both, and a manual retype away from
+the vehicle's type drops it. Bluetooth needs `BLUETOOTH_CONNECT`, asked where a device is added to a
+vehicle rather than on the arming ladder — the one permission not hung off turning recording on,
+because it serves a feature the user opts into later, and the recorder runs complete without it.
+
 **State bridge:** `location/TrackingStatus` is a process-wide `MutableStateFlow` the service writes
 and the UI collects — this is how live recording state reaches Compose without binding to the service.
 
@@ -928,11 +945,13 @@ why the workflow is the only thing standing between a forgotten bump and Play.
 - `applicationId` is permanent once published; the `${applicationId}.fileprovider` authority and
   notification/manifest pieces derive from it, so don't hardcode the package elsewhere.
 - All data is local; the network carries map data — Protomaps vector tiles (hosted API) plus the
-  glyphs/sprite from `protomaps.github.io` — and one deliberate exception: the add-trip form's
-  **online place search** (`data/OnlinePlaceSearch`, photon.komoot.io, OpenStreetMap data), which
-  sends the typed query and — where the form has a pin to bias by — that pin's coordinate, treats
-  every failure as "no results", and is switchable off in Settings → Privacy. **The
-  coordinate is a pin the user placed, never wherever the map happens to be looking**: the form's
+  glyphs/sprite from `protomaps.github.io` — and one deliberate exception: the **online place
+  search** (`data/OnlinePlaceSearch`, photon.komoot.io, OpenStreetMap data), which sends the typed
+  query and — where there is a pin to bias by — that pin's coordinate, treats every failure as "no
+  results", and is switchable off in Settings → Privacy. The add-trip form searches it for an end's
+  pin, and the place edit screen for a name, keeping only results inside the place's circle; a
+  suggestion becomes the name only by being picked. **The coordinate is a pin — one the user placed,
+  or the pin of the place being named — never wherever the map happens to be looking**: the form's
   own place list sorts by the map centre because re-ordering rows the device already holds discloses
   nothing, and that is the whole reason the two use different anchors. The ODbL credit in Settings
   and at the results is a licence requirement, like the GeoNames one. There is no server sync (a possible future feature — the

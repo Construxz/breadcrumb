@@ -13,9 +13,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.location.LocationListenerCompat
 import androidx.core.location.LocationManagerCompat
 import androidx.core.location.LocationRequestCompat
+import io.github.valeronm.breadcrumb.R
 import io.github.valeronm.breadcrumb.data.AndroidDistance
 import io.github.valeronm.breadcrumb.data.Settings
 import io.github.valeronm.breadcrumb.data.TrackRepository
+import io.github.valeronm.breadcrumb.data.VehicleRepository
+import io.github.valeronm.breadcrumb.data.db.VehicleLink
 import io.github.valeronm.breadcrumb.domain.ActivityType
 import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.DepartureWatch
@@ -25,6 +28,7 @@ import io.github.valeronm.breadcrumb.domain.Motion
 import io.github.valeronm.breadcrumb.domain.MovementConfirmer
 import io.github.valeronm.breadcrumb.domain.NoFixGuard
 import io.github.valeronm.breadcrumb.domain.RecordCardState
+import io.github.valeronm.breadcrumb.domain.VehicleLinkKind
 import io.github.valeronm.breadcrumb.domain.recordCardState
 import io.github.valeronm.breadcrumb.domain.recorderText
 import io.github.valeronm.breadcrumb.ui.recorderWords
@@ -42,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.Collections
 import java.util.Locale
 
 /**
@@ -73,6 +78,11 @@ class LocationRecordingService : Service() {
     private val watchdogAlarm = WatchdogAlarm(this)
     private val departureFence = DepartureFence(this)
     private val departureProbe = DepartureProbe(this, ::onProbePosition)
+    private val vehicleWatch = VehicleWatch(this, ::onVehicleLink)
+    private val vehicles by lazy { VehicleRepository(this) }
+
+    /** Registered links connected right now, in the order they connected — the notification's. */
+    private val connectedLinks: MutableMap<Long, VehicleLink> = Collections.synchronizedMap(LinkedHashMap())
 
     // Held rather than rebuilt per post: the shade is re-worded once per fix batch for the length of
     // a drive. It caches no text — every accessor reads the resource table again — so a language
@@ -205,6 +215,7 @@ class LocationRecordingService : Service() {
         }
         watchdogAlarm.schedule()
         TrackingStatus.update { it.copy(tracking = true) }
+        refreshVehicleWatch()
 
         // Start armed but idle — recording begins when a moving activity transition arrives.
         // (Don't optimistically open a track: while stationary it would just be created and
@@ -250,6 +261,10 @@ class LocationRecordingService : Service() {
         armed = false
         DebugLog.i(TAG, "handleStop: disarming")
         watchdogAlarm.cancel()
+        vehicleWatch.stop()
+        // Nothing watches the links once disarmed, so a stretch left open would run on through
+        // every track until the next arm; it ends where the watching did.
+        scope.launch { closeVehicleLinks() }
         activityManager.stop()
         // The session this stop ends. A re-arm before the coroutine below runs starts another, and
         // this stop must then do nothing: its teardown would reset a core that arm just set up, and
@@ -904,6 +919,55 @@ class LocationRecordingService : Service() {
         notifications.update(text.title, text.detailLine())
     }
 
+    /**
+     * (Re)starts the vehicle watch: on arming, and whenever the vehicle settings change what there
+     * is to watch for. Runs only while some link is registered, so an install with no vehicles
+     * registers nothing. Whatever the log still holds as connected predates this watch and nothing
+     * can vouch for it, so it is closed first; the watch's own first report reopens what really is.
+     */
+    fun refreshVehicleWatch() {
+        scope.launch {
+            val watching = vehicles.linksByKey().isNotEmpty()
+            closeVehicleLinks()
+            withContext(Dispatchers.Main) {
+                vehicleWatch.stop()
+                if (watching && armed) vehicleWatch.start()
+            }
+        }
+    }
+
+    private suspend fun closeVehicleLinks() {
+        val at = now()
+        for (id in vehicles.connectedLinkIds()) vehicles.logConnection(id, at, connected = false)
+        connectedLinks.clear()
+        showConnectedVehicle()
+    }
+
+    /** A link changed — logged only when it is one a vehicle was set up with. */
+    private fun onVehicleLink(kind: VehicleLinkKind, key: String, connected: Boolean) {
+        val at = now()
+        scope.launch {
+            val link = vehicles.linksByKey()[kind to key] ?: return@launch
+            vehicles.logConnection(link.id, at, connected)
+            DebugLog.i(TAG, "vehicle link ${link.id} (${kind.code}) ${if (connected) "connected" else "disconnected"}")
+            if (connected) connectedLinks[link.id] = link else connectedLinks.remove(link.id)
+            showConnectedVehicle()
+        }
+    }
+
+    /**
+     * Says in the notification which vehicle is connected and by what — the reader's way to see the
+     * recognition working before any trip has finished under it. The most recently connected link
+     * speaks when several are.
+     */
+    private suspend fun showConnectedVehicle() {
+        val link = synchronized(connectedLinks) { connectedLinks.values.lastOrNull() }
+        val line = link?.let { vehicles.vehicle(it.vehicleId) }?.let { vehicle ->
+            getString(R.string.notification_vehicle_connected, vehicle.name, link.label)
+        }
+        notifications.setVehicle(line)
+    }
+
     /** Withdraw the warning and forget the episode — the notification's half and the recorder's. */
     private fun clearDeafnessWarning() {
         notifications.clearDeafWarning()
@@ -918,6 +982,7 @@ class LocationRecordingService : Service() {
         // probe is a live request owned by it — one left behind delivers to a callback whose service
         // is gone.
         departureProbe.stop()
+        vehicleWatch.stop()
         instance = null
         openTrack = null
         TrackingStatus.update { it.copy(openTrack = null) }

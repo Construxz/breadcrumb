@@ -11,14 +11,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         Track::class, TrackPoint::class, Place::class,
         DerivedCluster::class, ClusterMember::class, DerivedInterval::class,
+        Vehicle::class, VehicleLink::class, LinkConnection::class,
     ],
-    version = 19,
+    version = 20,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun trackDao(): TrackDao
     abstract fun placeDao(): PlaceDao
     abstract fun derivedDao(): DerivedDao
+    abstract fun vehicleDao(): VehicleDao
 
     companion object {
         @Volatile
@@ -74,6 +76,46 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * v20 adds vehicles: the `vehicles` the user names, the `vehicle_links` (Bluetooth devices
+         * and Wi-Fi networks) that stand for them, the `link_connections` log the recorder keeps of
+         * those links, and `tracks.vehicleId`. Purely additive — a column any existing row reads as
+         * null and three empty tables — so nothing is copied and nothing re-derives.
+         */
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tracks ADD COLUMN vehicleId INTEGER")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `vehicles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`name` TEXT NOT NULL, `activityType` TEXT NOT NULL)",
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `vehicle_links` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`vehicleId` INTEGER NOT NULL, `kind` TEXT NOT NULL, `key` TEXT NOT NULL, " +
+                        "`label` TEXT NOT NULL, FOREIGN KEY(`vehicleId`) REFERENCES `vehicles`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE )",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_vehicle_links_vehicleId` ON `vehicle_links` (`vehicleId`)",
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_vehicle_links_kind_key` " +
+                        "ON `vehicle_links` (`kind`, `key`)",
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `link_connections` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`linkId` INTEGER NOT NULL, `atMs` INTEGER NOT NULL, `connected` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`linkId`) REFERENCES `vehicle_links`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_link_connections_linkId` ON `link_connections` (`linkId`)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_link_connections_atMs` ON `link_connections` (`atMs`)",
+                )
+            }
+        }
+
+        /**
          * The list the builder spreads, in order; the next migration is appended here.
          *
          * v18 is the floor: a database older than that fails to open rather than migrating.
@@ -82,7 +124,7 @@ abstract class AppDatabase : RoomDatabase() {
          * `version` above never renumbers downward for the same reason, since every installed
          * database would then present itself as a downgrade.
          */
-        private val MIGRATIONS = arrayOf(MIGRATION_18_19)
+        private val MIGRATIONS = arrayOf(MIGRATION_18_19, MIGRATION_19_20)
 
         fun get(context: Context): AppDatabase =
             instance ?: synchronized(this) {

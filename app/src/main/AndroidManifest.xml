@@ -28,9 +28,24 @@
     <!-- Ask the OS to exempt us from battery optimization so background recording isn't killed -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Vehicles: recognising one by its Bluetooth kit or its Wi-Fi hotspot. Bluetooth is asked for
+         only when a device is added to a vehicle; reading the Wi-Fi's name rides the location grant.
+         Neither radio is required, so a phone without one is not filtered out of the store. -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
     <uses-feature
         android:name="android.hardware.location.gps"
         android:required="true" />
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
 
     <application
         android:name=".App"
