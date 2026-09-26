@@ -119,10 +119,6 @@ internal fun MapLibrePlaceMap(
     /** What the map is looking at, reported once the camera stops — where the editor's crosshair
      *  aims. On settling rather than per frame, as [MapLibreTripMap] reports its own. */
     onCenterSettled: (Coordinate) -> Unit = {},
-    /** The phone's position, drawn as a dot; null draws none. */
-    userLocation: Coordinate? = null,
-    /** Where the screen wants the camera — see [MapCenterRequest]. */
-    goTo: MapCenterRequest? = null,
 ) {
     val applied = remember { AppliedPlaceInputs() }
     // The listener is attached once, to a map that outlives every recomposition, so it must read the
@@ -158,20 +154,9 @@ internal fun MapLibrePlaceMap(
             applied.capture = capture
             applied.rivalAreas = rivalAreas
             addPlaceLayers(ctx, style, placeContent())
-            applied.userLocation = userLocation
-            addUserLocationLayer(style, userLocation)
             framePlace(map, center.location, radiusM)
-            applied.goTo = goTo
         },
         onUpdate = { map, style ->
-            if (applied.userLocation != userLocation) {
-                applied.userLocation = userLocation
-                updateUserLocation(style, userLocation)
-            }
-            if (applied.goTo !== goTo) {
-                applied.goTo = goTo
-                goTo?.let { moveCameraTo(map, it.at) }
-            }
             if (applied.circleCenter != center.location || applied.circleRadiusM != radiusM) {
                 applied.circleCenter = center.location
                 style.getSourceAs<GeoJsonSource>(PLACE_CIRCLE_SOURCE)
@@ -223,8 +208,6 @@ private class PlaceMapContent(
 
 /** Last-applied inputs of the place map — value comparisons, the inputs are rebuilt lists. */
 private class AppliedPlaceInputs {
-    var userLocation: Coordinate? = null
-    var goTo: MapCenterRequest? = null
 
     /** Where the circle is drawn and how wide, tracked apart because the two have different
      *  consequences: either redraws the ring, but only a *resize* re-fits the camera and re-decides

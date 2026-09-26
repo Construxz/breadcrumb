@@ -139,7 +139,6 @@ internal fun PlaceEditScreen(
     var mapCenter by remember { mutableStateOf<Coordinate?>(null) }
     var aiming by remember { mutableStateOf(false) }
     val shade = rememberMapShade()
-    val myLocation = rememberMyLocation()
     val movePin: (Coordinate, String) -> Unit = { target, message ->
         val was = pin
         pin = target
@@ -250,8 +249,6 @@ internal fun PlaceEditScreen(
                             // either way.
                             onLongPress = { movePin(it, pinMoved) },
                             onCenterSettled = { mapCenter = it },
-                            userLocation = myLocation.position,
-                            goTo = myLocation.goTo,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -259,7 +256,6 @@ internal fun PlaceEditScreen(
                     if (aiming) AimOverlay()
                     MapCornerControls(
                         shade = shade,
-                        location = myLocation,
                         aiming = aiming,
                         aimDescription = stringResource(R.string.places_pin_aim),
                         confirmLabel = stringResource(R.string.places_pin_here),

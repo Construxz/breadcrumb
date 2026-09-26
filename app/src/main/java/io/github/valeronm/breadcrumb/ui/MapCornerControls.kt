@@ -49,14 +49,18 @@ import io.github.valeronm.breadcrumb.data.Settings as AppSettings
  * the same order, so one learned on either works on both. Bottom-right, clear of the filter chip
  * top-left, the compass top-right and the attribution bottom-left, lifted over the zoom readout
  * where dev builds show one. From the corner up: the basemap's light/dark switch, the way to where
- * the phone is, and the crosshair — which is how a pin is placed, wherever the map is looking. The
- * three are separate on purpose: going to the phone's position only moves the map, so the crosshair
- * can then be dropped there or anywhere else the map is moved to.
+ * the phone is, and the crosshair — which is how a pin is placed, wherever the map is looking.
+ * Going to the phone's position only moves the map, so the crosshair can then be dropped there or
+ * anywhere else the map is moved to.
+ *
+ * The way to the phone is offered only where [location] is given: on the Places map, where a
+ * place is started from nothing. The editor opens on a spot already chosen — a stop the app
+ * found, a place, or the crosshair's own pick — so there the button would only lead away from it.
  */
 @Composable
 internal fun BoxScope.MapCornerControls(
     shade: MapShadeState,
-    location: MyLocationState,
+    location: MyLocationState?,
     aiming: Boolean,
     /** What the crosshair's button is for on this map, said to a screen reader. */
     aimDescription: String,
@@ -89,7 +93,7 @@ internal fun BoxScope.MapCornerControls(
                 Icon(Icons.Filled.PushPin, contentDescription = aimDescription)
             }
         }
-        if (location.available) {
+        if (location != null && location.available) {
             SmallFloatingActionButton(onClick = location::goThere, containerColor = MaterialTheme.colorScheme.surface) {
                 if (location.locating) {
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
