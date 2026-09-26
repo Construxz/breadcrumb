@@ -56,6 +56,9 @@ interface VehicleDao {
     @Query("DELETE FROM vehicle_links WHERE id = :id")
     suspend fun deleteLink(id: Long)
 
+    @Query("DELETE FROM vehicle_links WHERE kind = :kind AND `key` = :key")
+    suspend fun deleteLinkByKey(kind: String, key: String)
+
     @Insert
     suspend fun insertConnection(event: LinkConnection)
 

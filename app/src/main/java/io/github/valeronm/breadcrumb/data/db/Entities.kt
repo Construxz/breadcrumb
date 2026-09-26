@@ -371,3 +371,30 @@ data class LinkConnection(
     val atMs: Long,
     val connected: Boolean,
 )
+
+/**
+ * A Bluetooth device or Wi-Fi network that means "at this place" — the home network, the office's
+ * — the place counterpart of a [VehicleLink], keyed the same way. One device or network stands for
+ * one thing: a vehicle or a place, never both, which the repository keeps across the two tables
+ * ([key] is unique per [kind] within each by index). It goes with its place, by cascade.
+ */
+@Entity(
+    tableName = "place_links",
+    foreignKeys = [
+        ForeignKey(
+            entity = Place::class,
+            parentColumns = ["id"],
+            childColumns = ["placeId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("placeId"), Index(value = ["kind", "key"], unique = true)],
+)
+data class PlaceLink(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val placeId: Long,
+    /** `bluetooth` or `wifi` — the link's `VehicleLinkKind.code`. */
+    val kind: String,
+    val key: String,
+    val label: String,
+)

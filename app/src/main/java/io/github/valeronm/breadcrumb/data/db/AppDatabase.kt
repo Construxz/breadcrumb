@@ -11,9 +11,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         Track::class, TrackPoint::class, Place::class,
         DerivedCluster::class, ClusterMember::class, DerivedInterval::class,
-        Vehicle::class, VehicleLink::class, LinkConnection::class,
+        Vehicle::class, VehicleLink::class, LinkConnection::class, PlaceLink::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -21,6 +21,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun placeDao(): PlaceDao
     abstract fun derivedDao(): DerivedDao
     abstract fun vehicleDao(): VehicleDao
+    abstract fun placeLinkDao(): PlaceLinkDao
 
     companion object {
         @Volatile
@@ -116,6 +117,25 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * v21 adds `place_links`: the Bluetooth devices and Wi-Fi networks that stand for a place,
+         * as `vehicle_links` do for a vehicle. Purely additive — one empty table.
+         */
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `place_links` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`placeId` INTEGER NOT NULL, `kind` TEXT NOT NULL, `key` TEXT NOT NULL, " +
+                        "`label` TEXT NOT NULL, FOREIGN KEY(`placeId`) REFERENCES `places`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE )",
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_place_links_placeId` ON `place_links` (`placeId`)")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_place_links_kind_key` ON `place_links` (`kind`, `key`)",
+                )
+            }
+        }
+
+        /**
          * The list the builder spreads, in order; the next migration is appended here.
          *
          * v18 is the floor: a database older than that fails to open rather than migrating.
@@ -124,7 +144,7 @@ abstract class AppDatabase : RoomDatabase() {
          * `version` above never renumbers downward for the same reason, since every installed
          * database would then present itself as a downgrade.
          */
-        private val MIGRATIONS = arrayOf(MIGRATION_18_19, MIGRATION_19_20)
+        private val MIGRATIONS = arrayOf(MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21)
 
         fun get(context: Context): AppDatabase =
             instance ?: synchronized(this) {

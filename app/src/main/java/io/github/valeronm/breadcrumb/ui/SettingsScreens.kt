@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Route
@@ -93,6 +94,7 @@ internal fun SettingsScreen(onBack: () -> Unit, onOpenPage: (SettingsPage) -> Un
             { NavRow(stringResource(R.string.settings_group_recording), icon = Icons.Filled.MyLocation) { onOpenPage(SettingsPage.Recording) } },
             { NavRow(stringResource(R.string.settings_trips), icon = Icons.Filled.Route) { onOpenPage(SettingsPage.Trips) } },
             { NavRow(stringResource(R.string.vehicles_title), icon = Icons.Filled.DirectionsCar) { onOpenPage(SettingsPage.Vehicles) } },
+            { NavRow(stringResource(R.string.connections_title), icon = Icons.Filled.Link) { onOpenPage(SettingsPage.Connections) } },
             { NavRow(stringResource(R.string.settings_group_display), icon = Icons.Filled.Tune) { onOpenPage(SettingsPage.Display) } },
             { NavRow(stringResource(R.string.settings_group_privacy), icon = Icons.Filled.Lock) { onOpenPage(SettingsPage.Privacy) } },
         )
@@ -633,7 +635,7 @@ internal fun LogsScreen(onBack: () -> Unit) {
     }
 }
 
-internal enum class SettingsPage { Recording, Trips, Vehicles, Display, Privacy, Data, RecentlyDeleted, Logs, About }
+internal enum class SettingsPage { Recording, Trips, Vehicles, Connections, Display, Privacy, Data, RecentlyDeleted, Logs, About }
 
 @Composable
 internal fun DisplaySettingsScreen(

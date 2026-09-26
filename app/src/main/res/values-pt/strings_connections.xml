@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="connections_confirm_add">Adicionar</string>
+    <string name="connections_kind_bluetooth">Bluetooth</string>
+    <string name="connections_kind_wifi">Wi-Fi</string>
+    <string name="connections_add_bluetooth">Adicionar dispositivo Bluetooth</string>
+    <string name="connections_add_current_wifi">Adicionar a rede Wi-Fi atual</string>
+    <string name="connections_add_wifi_by_name">Introduzir o nome de uma rede Wi-Fi</string>
+    <string name="connections_wifi_name">Nome da rede Wi-Fi</string>
+    <string name="connections_no_wifi">O telemóvel não está numa rede Wi-Fi, ou o Android não mostra o nome dela</string>
+    <string name="connections_remove_link">Remover</string>
+    <string name="connections_title">Ligações</string>
+    <string name="connections_description">Os dispositivos Bluetooth e as redes Wi-Fi que representam um dos seus veículos ou locais. Cada um representa apenas um deles.</string>
+    <string name="connections_empty">Ainda nada adicionado. Adicione um dispositivo ou uma rede aqui, ou a partir de um veículo ou de um local.</string>
+    <string name="connections_assign">Representa</string>
+    <string name="connections_vehicles">Veículos</string>
+    <string name="connections_places">Locais</string>
+    <string name="connections_no_owners">Adicione primeiro um veículo ou dê nome a um local.</string>
+    <string name="connections_no_paired_devices">Não há dispositivos emparelhados. Emparelhe-o primeiro nas definições de Bluetooth do telemóvel.</string>
+    <string name="connections_link_taken">Um veículo ou um local já usa isto. Mude-o em Definições → Ligações.</string>
+    <string name="connections_place_links">Reconhecido por</string>
+    <string name="connections_place_links_description">A rede Wi-Fi, por exemplo. Com a gravação ligada, a notificação indica quando o telemóvel está ligado a ela.</string>
+    <string name="connections_place_links_none">Ainda não é reconhecido por nada</string>
+    <string name="connections_done">Concluído</string>
+    <plurals name="connections_place_link_count">
+        <item quantity="one">Reconhecido por %d ligação</item>
+        <item quantity="other">Reconhecido por %d ligações</item>
+    </plurals>
+</resources>

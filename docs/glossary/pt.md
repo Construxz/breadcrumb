@@ -34,6 +34,7 @@ Sections and order follow `en.md`, so the two files read side by side.
 | point | ponto | Rejected ones are *ruidosos*; a guessed one is a *posição estimada*, the phrase the setting that drops them already used. |
 | activity | atividade | |
 | vehicle | veículo | |
+| connection | ligação | *Ligações* is the Settings page. Not *conexão*, the Brazilian form. |
 | movement | movimento | Countable as *movimentos*, the same word. Also the Statistics section heading, where it earns its keep twice: *Movimento* names a section of many activities, and spares the screen a *Viagens* heading below an unselected *Viagens* tab. |
 
 ### A stay

@@ -785,6 +785,7 @@ private fun SettingsPagesOverlay(
             SettingsPage.Recording -> RecordingSettingsScreen(layer.dismiss)
             SettingsPage.Trips -> TripsSettingsScreen(layer.dismiss)
             SettingsPage.Vehicles -> VehiclesScreen(layer.dismiss)
+            SettingsPage.Connections -> ConnectionsScreen(layer.dismiss)
             SettingsPage.Display -> DisplaySettingsScreen(layer.dismiss, unitChoice, onUnitChoice)
             SettingsPage.Privacy -> PrivacySettingsScreen(layer.dismiss)
             SettingsPage.Data -> DataSettingsScreen(layer.dismiss, viewModel)

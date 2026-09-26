@@ -36,9 +36,12 @@ class VehicleRepository(context: Context, private val db: AppDatabase = AppDatab
     /** The tracks travelled in it keep their label and lose only the reference. */
     suspend fun delete(id: Long) = dao.deleteVehicle(id)
 
-    /** False when that device or network already stands for a vehicle. */
+    /** False when that device or network already stands for a vehicle or a place. */
     suspend fun addLink(vehicleId: Long, kind: VehicleLinkKind, key: String, label: String): Boolean =
-        dao.insertLink(VehicleLink(vehicleId = vehicleId, kind = kind.code, key = key, label = label)) != -1L
+        db.withTransaction {
+            val atPlace = db.placeLinkDao().allLinks().any { it.kind == kind.code && it.key == key }
+            !atPlace && dao.insertLink(VehicleLink(vehicleId = vehicleId, kind = kind.code, key = key, label = label)) != -1L
+        }
 
     suspend fun removeLink(id: Long) = dao.deleteLink(id)
 

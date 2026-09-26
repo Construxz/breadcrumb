@@ -32,6 +32,7 @@ in `res/values/`. See the [README](README.md) for how the groups are chosen and 
 | point | point | A position belonging to a trip, stored as a row of it — whether positioning found it, a file supplied it, or **the user placed it on the map**, which is all a hand-entered trip's ends are. Rejected ones are *noisy*; one the phone guessed rather than measured from satellites is a *guessed position*. |
 | activity | activity | The user's detected activity. Per-type words live in `strings_recorder.xml`, in standalone and inline forms. |
 | vehicle | vehicle | Something the user travels in and named themselves — a car, a motorbike, a boat — recognised by a Bluetooth device or a Wi-Fi network it has. A trip made in it takes its type and its name. Never *car* in copy about the feature, since a vehicle can be a boat. |
+| connection | connection | A Bluetooth device or Wi-Fi network the user tied to a vehicle or a place — the Settings page listing them all is *Connections*. What a device *does* is still *connect*; the noun is the tie the user made. |
 | movement | movement | What the recorder watches for and trips are cut from: an *activity* names its kind, a *trip* bounds one continuous stretch of it. Used where no single kind is meant — "Moving" is detected motion the recogniser could not name, and Statistics' **Movement** heading covers a section whose rows are one activity each, the section being about all of them at once. Countable *movements* are its stretches. |
 
 ### A stay
