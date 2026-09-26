@@ -1,11 +1,13 @@
 package io.github.valeronm.breadcrumb.ui
 
 import android.content.Context
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,15 +20,26 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddLocationAlt
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
@@ -37,11 +50,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.valeronm.breadcrumb.BuildConfig
 import io.github.valeronm.breadcrumb.R
+import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.PlaceResolver
 import io.github.valeronm.breadcrumb.domain.PlaceSearch
 import io.github.valeronm.breadcrumb.domain.TimelineItem
 import io.github.valeronm.breadcrumb.domain.placeCategory
+import io.github.valeronm.breadcrumb.location.DeviceLocation
+import kotlinx.coroutines.launch
 import java.util.Locale
 import io.github.valeronm.breadcrumb.data.Settings as AppSettings
 
@@ -85,6 +102,8 @@ internal fun PlacesTab(
      *  one that consumes it. */
     homeRequest: Int,
     onOpenPlace: (String) -> Unit,
+    /** Starts a new place at a spot no stop has found — the phone's own position. */
+    onCreatePlaceAt: (Coordinate) -> Unit,
 ) {
     val context = LocalContext.current
     val derivedPlaces by viewModel.places.collectAsStateWithLifecycle()
@@ -212,6 +231,7 @@ internal fun PlacesTab(
                         },
                         homeRequest = homeRequest,
                         onOpenPlace = onOpenPlace,
+                        onCreatePlaceAt = onCreatePlaceAt,
                     )
                 }
 
@@ -242,7 +262,32 @@ private fun PlacesMapPage(
     onToggleRareStops: () -> Unit,
     homeRequest: Int,
     onOpenPlace: (String) -> Unit,
+    onCreatePlaceAt: (Coordinate) -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // The phone's position as a dot: the last one known on open, costing nothing; a fresh fix only
+    // once the reader asks to go there — which is also when a place can be started on it.
+    var userLocation by remember { mutableStateOf(DeviceLocation.lastKnown(context)) }
+    var goTo by remember { mutableStateOf<MapCenterRequest?>(null) }
+    var located by remember { mutableStateOf(false) }
+    var locating by remember { mutableStateOf(false) }
+    val goToMyLocation: () -> Unit = {
+        if (!locating) {
+            locating = true
+            scope.launch {
+                val here = DeviceLocation.current(context)
+                locating = false
+                if (here == null) {
+                    Toast.makeText(context, R.string.places_no_location, Toast.LENGTH_SHORT).show()
+                } else {
+                    userLocation = here
+                    goTo = MapCenterRequest(here)
+                    located = true
+                }
+            }
+        }
+    }
     // Card padding keeps the texture-mode map off the back-gesture edge strips.
     Card(
         Modifier
@@ -267,7 +312,17 @@ private fun PlacesMapPage(
                     frameKey = homeRequest,
                     onOpen = onOpenPlace,
                     modifier = Modifier.fillMaxSize(),
+                    userLocation = userLocation,
+                    goTo = goTo,
                 )
+                if (DeviceLocation.granted(context)) {
+                    MyLocationControls(
+                        locating = locating,
+                        newPlaceAt = userLocation.takeIf { located },
+                        onMyLocation = goToMyLocation,
+                        onNewPlace = onCreatePlaceAt,
+                    )
+                }
             }
             MapFilterChip(
                 selected = showRareStops,
@@ -469,3 +524,39 @@ private fun visitPhrase(summary: PlaceResolver.PlaceSummary): String =
 @Composable
 private fun placeScrubberStops(listed: List<PlaceResolver.PlaceSummary>): List<ScrollStop<PlaceResolver.PlaceSummary>> =
     remember(listed) { listed.mapIndexed { index, summary -> ScrollStop(summary, index) } }
+
+/**
+ * The map's way to where the phone is: a button that goes there, and — once it has — one that
+ * starts a new place on the spot, for somewhere the history has no stop at yet. Bottom-right,
+ * clear of the filter chip top-left, the compass top-right and the attribution bottom-left.
+ */
+@Composable
+private fun BoxScope.MyLocationControls(
+    locating: Boolean,
+    newPlaceAt: Coordinate?,
+    onMyLocation: () -> Unit,
+    onNewPlace: (Coordinate) -> Unit,
+) {
+    Column(
+        Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 12.dp, bottom = if (BuildConfig.DEV_TOOLS) 44.dp else 12.dp),
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (newPlaceAt != null) {
+            ExtendedFloatingActionButton(
+                onClick = { onNewPlace(newPlaceAt) },
+                icon = { Icon(Icons.Filled.AddLocationAlt, contentDescription = null) },
+                text = { Text(stringResource(R.string.places_new_here)) },
+            )
+        }
+        SmallFloatingActionButton(onClick = onMyLocation, containerColor = MaterialTheme.colorScheme.surface) {
+            if (locating) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Filled.MyLocation, contentDescription = stringResource(R.string.places_my_location))
+            }
+        }
+    }
+}
