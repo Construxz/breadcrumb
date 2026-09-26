@@ -116,12 +116,16 @@ internal fun MapLibrePlaceMap(
     rivalAreas: List<PlaceClusterer.Seed> = emptyList(),
     /** A long press on the map, in map coordinates — how the center is placed by hand. */
     onLongPress: (Coordinate) -> Unit,
+    /** What the map is looking at, reported once the camera stops — where the editor's crosshair
+     *  aims. On settling rather than per frame, as [MapLibreTripMap] reports its own. */
+    onCenterSettled: (Coordinate) -> Unit = {},
 ) {
     val applied = remember { AppliedPlaceInputs() }
     // The listener is attached once, to a map that outlives every recomposition, so it must read the
     // *current* callback rather than the one the first composition passed — that one would move the
     // pin while offering an Undo back to wherever the pin was when the map was built.
     val longPress by rememberUpdatedState(onLongPress)
+    val centerSettled by rememberUpdatedState(onCenterSettled)
     val placeContent = {
         PlaceMapContent(
             center = center,
@@ -136,6 +140,10 @@ internal fun MapLibrePlaceMap(
             map.addOnMapLongClickListener { at ->
                 longPress(at.toCoordinate())
                 true
+            }
+            map.addOnCameraIdleListener {
+                val at = map.cameraPosition.target ?: return@addOnCameraIdleListener
+                centerSettled(at.toCoordinate())
             }
         },
         onStyleLoaded = { ctx, map, style ->

@@ -87,4 +87,7 @@
         <item quantity="many">%d раз</item>
         <item quantity="other">%d раза</item>
     </plurals>
+    <string name="places_pin_aim">Точно поставить метку</string>
+    <string name="places_pin_here">Поставить метку здесь</string>
+    <string name="places_pin_aim_hint">Сдвигайте карту, пока крестик не окажется на нужном месте</string>
 </resources>
