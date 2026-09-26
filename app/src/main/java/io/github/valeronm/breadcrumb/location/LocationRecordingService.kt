@@ -13,10 +13,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.location.LocationListenerCompat
 import androidx.core.location.LocationManagerCompat
 import androidx.core.location.LocationRequestCompat
+import io.github.valeronm.breadcrumb.R
 import io.github.valeronm.breadcrumb.data.AndroidDistance
 import io.github.valeronm.breadcrumb.data.Settings
 import io.github.valeronm.breadcrumb.data.TrackRepository
 import io.github.valeronm.breadcrumb.data.VehicleRepository
+import io.github.valeronm.breadcrumb.data.db.VehicleLink
 import io.github.valeronm.breadcrumb.domain.ActivityType
 import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.DepartureWatch
@@ -44,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.Collections
 import java.util.Locale
 
 /**
@@ -77,6 +80,9 @@ class LocationRecordingService : Service() {
     private val departureProbe = DepartureProbe(this, ::onProbePosition)
     private val vehicleWatch = VehicleWatch(this, ::onVehicleLink)
     private val vehicles by lazy { VehicleRepository(this) }
+
+    /** Registered links connected right now, in the order they connected — the notification's. */
+    private val connectedLinks: MutableMap<Long, VehicleLink> = Collections.synchronizedMap(LinkedHashMap())
 
     // Held rather than rebuilt per post: the shade is re-worded once per fix batch for the length of
     // a drive. It caches no text — every accessor reads the resource table again — so a language
@@ -933,6 +939,8 @@ class LocationRecordingService : Service() {
     private suspend fun closeVehicleLinks() {
         val at = now()
         for (id in vehicles.connectedLinkIds()) vehicles.logConnection(id, at, connected = false)
+        connectedLinks.clear()
+        showConnectedVehicle()
     }
 
     /** A link changed — logged only when it is one a vehicle was set up with. */
@@ -942,7 +950,22 @@ class LocationRecordingService : Service() {
             val link = vehicles.linksByKey()[kind to key] ?: return@launch
             vehicles.logConnection(link.id, at, connected)
             DebugLog.i(TAG, "vehicle link ${link.id} (${kind.code}) ${if (connected) "connected" else "disconnected"}")
+            if (connected) connectedLinks[link.id] = link else connectedLinks.remove(link.id)
+            showConnectedVehicle()
         }
+    }
+
+    /**
+     * Says in the notification which vehicle is connected and by what — the reader's way to see the
+     * recognition working before any trip has finished under it. The most recently connected link
+     * speaks when several are.
+     */
+    private suspend fun showConnectedVehicle() {
+        val link = synchronized(connectedLinks) { connectedLinks.values.lastOrNull() }
+        val line = link?.let { vehicles.vehicle(it.vehicleId) }?.let { vehicle ->
+            getString(R.string.notification_vehicle_connected, vehicle.name, link.label)
+        }
+        notifications.setVehicle(line)
     }
 
     /** Withdraw the warning and forget the episode — the notification's half and the recorder's. */

@@ -25,6 +25,8 @@ class VehicleRepository(context: Context, private val db: AppDatabase = AppDatab
 
     fun observeVehicleOf(trackId: Long): Flow<Vehicle?> = dao.observeVehicleOf(trackId)
 
+    suspend fun vehicle(id: Long): Vehicle? = dao.vehicle(id)
+
     suspend fun create(name: String, activity: ActivityType): Long =
         dao.insertVehicle(Vehicle(name = name, activityType = activity.name))
 

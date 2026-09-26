@@ -32,6 +32,9 @@ class RecorderNotifications(private val service: Service) {
     // unlike [deafPosted], which every writer reaches under the lock.
     @Volatile private var lastPosted: Pair<String, String>? = null
 
+    /** The header line naming a connected vehicle, or null; see [setVehicle]. */
+    @Volatile private var vehicleLine: String? = null
+
     // Whether the alert is currently up. Tracked here rather than read back off the recorder's
     // deafness bookkeeping: this is the only thing that posts or cancels it, so it cannot disagree.
     private var deafPosted = false
@@ -74,6 +77,7 @@ class RecorderNotifications(private val service: Service) {
     fun stopForeground() {
         ServiceCompat.stopForeground(service, ServiceCompat.STOP_FOREGROUND_REMOVE)
         lastPosted = null
+        vehicleLine = null
     }
 
     /**
@@ -85,6 +89,18 @@ class RecorderNotifications(private val service: Service) {
     fun update(title: String, text: String) {
         if (lastPosted == title to text) return
         lastPosted = title to text
+        manager?.notify(ONGOING_ID, build(title, text))
+    }
+
+    /**
+     * The vehicle the recorder sees connected, said in the notification's header line — or null
+     * for none. Re-posts only on a change, and only over a notification already up: the wording
+     * beside it stays [update]'s.
+     */
+    fun setVehicle(line: String?) {
+        if (vehicleLine == line) return
+        vehicleLine = line
+        val (title, text) = lastPosted ?: return
         manager?.notify(ONGOING_ID, build(title, text))
     }
 
@@ -118,6 +134,7 @@ class RecorderNotifications(private val service: Service) {
     private fun build(title: String, text: String): Notification = NotificationCompat.Builder(service, App.CHANNEL_ID)
         .setContentTitle(title)
         .setContentText(text)
+        .setSubText(vehicleLine)
         .setSmallIcon(R.drawable.ic_notification)
         .setOngoing(true)
         .setOnlyAlertOnce(true)
