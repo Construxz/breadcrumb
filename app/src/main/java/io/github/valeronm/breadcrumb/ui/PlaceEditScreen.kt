@@ -273,24 +273,26 @@ internal fun PlaceEditScreen(
             }
             Card(Modifier.weight(1f).fillMaxWidth()) {
                 Box(Modifier.fillMaxSize().clipToBounds()) {
-                    MapLibrePlaceMap(
-                        center = PlaceMarker(pin, summary.place),
-                        radiusM = radiusM.toDouble(),
-                        endpoints = summary.endpoints,
-                        neighbors = neighbors,
-                        capture = captureDots,
-                        rivalAreas = rivals,
-                        // Placing the center by hand, where the re-center action only snaps it to
-                        // what the circle already holds — and the center is what decides what is
-                        // held, so it needs an answer that isn't derived from the dots. A long press
-                        // rather than a tap: a tap is how a map is panned, and this is one Undo away
-                        // either way.
-                        onLongPress = { movePin(it, pinMoved) },
-                        onCenterSettled = { mapCenter = it },
-                        userLocation = userLocation,
-                        goTo = goTo,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    MapShade(placesMapDark()) {
+                        MapLibrePlaceMap(
+                            center = PlaceMarker(pin, summary.place),
+                            radiusM = radiusM.toDouble(),
+                            endpoints = summary.endpoints,
+                            neighbors = neighbors,
+                            capture = captureDots,
+                            rivalAreas = rivals,
+                            // Placing the center by hand, where the re-center action only snaps it to
+                            // what the circle already holds — and the center is what decides what is
+                            // held, so it needs an answer that isn't derived from the dots. A long press
+                            // rather than a tap: a tap is how a map is panned, and this is one Undo away
+                            // either way.
+                            onLongPress = { movePin(it, pinMoved) },
+                            onCenterSettled = { mapCenter = it },
+                            userLocation = userLocation,
+                            goTo = goTo,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                     // The precise way to place the pin: a long press puts it under a fingertip,
                     // which covers the very spot it aims at, where a cross fixed at the middle of
                     // the map stays visible while the map moves under it, at any zoom.

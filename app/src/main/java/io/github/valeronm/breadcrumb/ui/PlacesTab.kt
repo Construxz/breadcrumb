@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -22,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddLocationAlt
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -265,6 +269,10 @@ private fun PlacesMapPage(
     onCreatePlaceAt: (Coordinate) -> Unit,
 ) {
     val context = LocalContext.current
+    // The theme's shade until the reader picks one here: an overview of streets reads better light
+    // for some, and the app theme is a choice about the chrome, not about the map.
+    val themeDark = isSystemInDarkTheme()
+    var dark by rememberSaveable { mutableStateOf(AppSettings.placesMapDark(context) ?: themeDark) }
     val scope = rememberCoroutineScope()
     // The phone's position as a dot: the last one known on open, costing nothing; a fresh fix only
     // once the reader asks to go there — which is also when a place can be started on it.
@@ -307,22 +315,27 @@ private fun PlacesMapPage(
                     Modifier.fillMaxSize().padding(24.dp),
                 )
             } else {
-                MapLibrePlacesMap(
-                    places = mapPlaces,
-                    frameKey = homeRequest,
-                    onOpen = onOpenPlace,
-                    modifier = Modifier.fillMaxSize(),
-                    userLocation = userLocation,
-                    goTo = goTo,
-                )
-                if (DeviceLocation.granted(context)) {
-                    MyLocationControls(
-                        locating = locating,
-                        newPlaceAt = userLocation.takeIf { located },
-                        onMyLocation = goToMyLocation,
-                        onNewPlace = onCreatePlaceAt,
+                MapShade(dark) {
+                    MapLibrePlacesMap(
+                        places = mapPlaces,
+                        frameKey = homeRequest,
+                        onOpen = onOpenPlace,
+                        modifier = Modifier.fillMaxSize(),
+                        userLocation = userLocation,
+                        goTo = goTo,
                     )
                 }
+                MapCornerControls(
+                    dark = dark,
+                    onToggleShade = {
+                        dark = !dark
+                        AppSettings.setPlacesMapDark(context, dark)
+                    },
+                    locating = locating,
+                    newPlaceAt = userLocation.takeIf { located },
+                    onMyLocation = goToMyLocation.takeIf { DeviceLocation.granted(context) },
+                    onNewPlace = onCreatePlaceAt,
+                )
             }
             MapFilterChip(
                 selected = showRareStops,
@@ -526,15 +539,19 @@ private fun placeScrubberStops(listed: List<PlaceResolver.PlaceSummary>): List<S
     remember(listed) { listed.mapIndexed { index, summary -> ScrollStop(summary, index) } }
 
 /**
- * The map's way to where the phone is: a button that goes there, and — once it has — one that
- * starts a new place on the spot, for somewhere the history has no stop at yet. Bottom-right,
- * clear of the filter chip top-left, the compass top-right and the attribution bottom-left.
+ * The Places map's buttons, stacked in its bottom-right corner — clear of the filter chip top-left,
+ * the compass top-right and the attribution bottom-left, and lifted over the zoom readout where dev
+ * builds show one. Nearest the corner, the basemap's light/dark switch. Above it, the way to where
+ * the phone is ([onMyLocation], absent without a location grant), and — once it has gone there —
+ * one that starts a new place on the spot, for somewhere the history has no stop at yet.
  */
 @Composable
-private fun BoxScope.MyLocationControls(
+private fun BoxScope.MapCornerControls(
+    dark: Boolean,
+    onToggleShade: () -> Unit,
     locating: Boolean,
     newPlaceAt: Coordinate?,
-    onMyLocation: () -> Unit,
+    onMyLocation: (() -> Unit)?,
     onNewPlace: (Coordinate) -> Unit,
 ) {
     Column(
@@ -544,19 +561,27 @@ private fun BoxScope.MyLocationControls(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (newPlaceAt != null) {
+        if (newPlaceAt != null && onMyLocation != null) {
             ExtendedFloatingActionButton(
                 onClick = { onNewPlace(newPlaceAt) },
                 icon = { Icon(Icons.Filled.AddLocationAlt, contentDescription = null) },
                 text = { Text(stringResource(R.string.places_new_here)) },
             )
         }
-        SmallFloatingActionButton(onClick = onMyLocation, containerColor = MaterialTheme.colorScheme.surface) {
-            if (locating) {
-                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-            } else {
-                Icon(Icons.Filled.MyLocation, contentDescription = stringResource(R.string.places_my_location))
+        if (onMyLocation != null) {
+            SmallFloatingActionButton(onClick = onMyLocation, containerColor = MaterialTheme.colorScheme.surface) {
+                if (locating) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Filled.MyLocation, contentDescription = stringResource(R.string.places_my_location))
+                }
             }
+        }
+        SmallFloatingActionButton(onClick = onToggleShade, containerColor = MaterialTheme.colorScheme.surface) {
+            Icon(
+                if (dark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                contentDescription = stringResource(if (dark) R.string.places_map_light else R.string.places_map_dark),
+            )
         }
     }
 }
