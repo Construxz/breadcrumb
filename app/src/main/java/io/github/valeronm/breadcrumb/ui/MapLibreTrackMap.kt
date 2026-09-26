@@ -102,7 +102,7 @@ internal fun MapLibreTrackMap(
     Box(modifier) {
         MapLibreStyledMap(
             modifier = Modifier.fillMaxSize(),
-            onStyleLoaded = { ctx, map, style ->
+            onStyleLoaded = { ctx, map, style, dark ->
                 // The end places are one input drawn at two depths — their areas under the line, their
                 // pins over it so it can't cover them.
                 addEndPlaceAreas(style, endPlaces)
@@ -113,7 +113,7 @@ internal fun MapLibreTrackMap(
                 // Over the recorder's own markers: at an end the two land within a capture radius of
                 // each other, and the place is the one that says where the journey went. The
                 // scrubber's selection alone draws over it — that one is under the user's thumb.
-                addEndPlacePins(ctx, style, endPlaces)
+                addEndPlacePins(ctx, style, endPlaces, dark)
                 addSelectionLayer(ctx, style, selectedPoint)
                 frameTo(map, framePositions(points, noisyPoints, greatCircleLegs), singlePointZoom = 15.0)
                 // Stamped here as well as drawn: otherwise the first update sees no applied input
@@ -313,10 +313,10 @@ private fun endPlaceCollection(places: List<Place>): FeatureCollection =
         },
     )
 
-private fun addEndPlacePins(ctx: Context, style: Style, places: List<Place>) {
+private fun addEndPlacePins(ctx: Context, style: Style, places: List<Place>, dark: Boolean) {
     addEndPlacePinImages(ctx, style, places)
     style.addSource(GeoJsonSource(END_PLACE_SOURCE, endPlaceCollection(places)))
-    style.addLayer(labeledSymbolLayer(ctx, END_PLACE_LAYER, END_PLACE_SOURCE))
+    style.addLayer(labeledSymbolLayer(dark, END_PLACE_LAYER, END_PLACE_SOURCE))
 }
 
 /**

@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterCenterFocus
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -44,8 +45,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.valeronm.breadcrumb.R
 import io.github.valeronm.breadcrumb.data.AndroidDistance
+import io.github.valeronm.breadcrumb.data.OnlinePlaceSearch
 import io.github.valeronm.breadcrumb.data.db.Place
 import io.github.valeronm.breadcrumb.domain.Coordinate
+import io.github.valeronm.breadcrumb.domain.DistanceFn
 import io.github.valeronm.breadcrumb.domain.PlaceClusterer
 import io.github.valeronm.breadcrumb.domain.PlaceResolver
 import io.github.valeronm.breadcrumb.util.SliderStops
@@ -131,6 +134,10 @@ internal fun PlaceEditScreen(
     // Both ways of moving the pin are one step back: a jumped pin has nowhere obvious to return to,
     // where a slider can simply be dragged again.
     val pinMoved = stringResource(R.string.places_pin_moved)
+    // Where the map is looking, and whether the crosshair is up to place the pin there.
+    var mapCenter by remember { mutableStateOf<Coordinate?>(null) }
+    var aiming by remember { mutableStateOf(false) }
+    val shade = rememberMapShade()
     val movePin: (Coordinate, String) -> Unit = { target, message ->
         val was = pin
         pin = target
@@ -221,23 +228,45 @@ internal fun PlaceEditScreen(
                 .padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Card(Modifier.fillMaxWidth()) { PlaceNameField(name) }
+            Card(Modifier.fillMaxWidth()) {
+                PlaceNameField(name, pin, { radiusM.toDouble() }, maxRadiusM, viewModel)
+            }
             Card(Modifier.weight(1f).fillMaxWidth()) {
                 Box(Modifier.fillMaxSize().clipToBounds()) {
-                    MapLibrePlaceMap(
-                        center = PlaceMarker(pin, summary.place),
-                        radiusM = radiusM.toDouble(),
-                        endpoints = summary.endpoints,
-                        neighbors = neighbors,
-                        capture = captureDots,
-                        rivalAreas = rivals,
-                        // Placing the center by hand, where the re-center action only snaps it to
-                        // what the circle already holds — and the center is what decides what is
-                        // held, so it needs an answer that isn't derived from the dots. A long press
-                        // rather than a tap: a tap is how a map is panned, and this is one Undo away
-                        // either way.
-                        onLongPress = { movePin(it, pinMoved) },
-                        modifier = Modifier.fillMaxSize(),
+                    MapShade(shade.dark) {
+                        MapLibrePlaceMap(
+                            center = PlaceMarker(pin, summary.place),
+                            radiusM = radiusM.toDouble(),
+                            endpoints = summary.endpoints,
+                            neighbors = neighbors,
+                            capture = captureDots,
+                            rivalAreas = rivals,
+                            // Placing the center by hand, where the re-center action only snaps it to
+                            // what the circle already holds — and the center is what decides what is
+                            // held, so it needs an answer that isn't derived from the dots. A long press
+                            // rather than a tap: a tap is how a map is panned, and this is one Undo away
+                            // either way.
+                            onLongPress = { movePin(it, pinMoved) },
+                            onCenterSettled = { mapCenter = it },
+                            camera = shade.camera,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                    // The precise way to place the pin — see [AimOverlay].
+                    if (aiming) AimOverlay()
+                    MapCornerControls(
+                        shade = shade,
+                        // A spot is already chosen here — see [MapCornerControls].
+                        location = null,
+                        aiming = aiming,
+                        aimDescription = stringResource(R.string.places_pin_aim),
+                        confirmLabel = stringResource(R.string.places_pin_here),
+                        onAim = { aiming = true },
+                        onCancelAim = { aiming = false },
+                        onConfirmAim = {
+                            mapCenter?.let { movePin(it, pinMoved) }
+                            aiming = false
+                        },
                     )
                     // Over the map's corner, not under the slider: this number is read *while*
                     // dragging, and a hand reaching down to the slider covers everything below it.
@@ -295,22 +324,68 @@ internal fun PlaceEditScreen(
 }
 
 /**
- * What a place is called. Takes the state rather than its value so that typing invalidates this and
- * nothing above it: the editor's column holds a map that cannot skip a recomposition, and would
- * re-run its whole input diff per character.
+ * Takes the name as a state and the radius as a read so that typing and dragging invalidate this
+ * and nothing above it: the editor's column holds a map that cannot skip a
+ * recomposition, and would re-run its whole input diff per character.
  */
 @Composable
-private fun PlaceNameField(name: MutableState<String>) {
-    OutlinedTextField(
-        value = name.value,
-        // `singleLine` lays the field out on one line but doesn't police what arrives: paste a block
-        // of text and everything past the first break is stored, and saved, where it can't be seen.
-        // Breaks (and the indentation around them) fold into single spaces instead.
-        onValueChange = { name.value = it.replace(LINE_BREAK_RUN, " ") },
-        singleLine = true,
-        label = { Text(stringResource(R.string.places_name_field)) },
-        // Place names are proper nouns — capitalize each word.
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-    )
+private fun PlaceNameField(
+    name: MutableState<String>,
+    pin: Coordinate,
+    radiusM: () -> Double,
+    /** Bounds the request at the slider's largest radius, so a drag sends no new one. */
+    maxRadiusM: Double,
+    viewModel: TrackListViewModel,
+) {
+    // Only typed text is searched: a label the place opened with, or a suggestion just picked, is a
+    // name.
+    val query = remember(name) { mutableStateOf("") }
+    val typed = query.value
+    val hits by rememberOnlineHits(typed, pin, viewModel, withinM = maxRadiusM)
+    // A slider drag recomposes the field only when it changes what is shown.
+    val shown by remember(hits, pin) {
+        derivedStateOf { nameSuggestions(hits, pin, radiusM(), AndroidDistance) }
+    }
+    SearchDropdown(
+        query = typed,
+        // Nothing to open while nothing is found: a name of one's own is the usual answer.
+        open = typed.isNotBlank() && shown.isNotEmpty(),
+        field = { anchor ->
+            // The menu matches the anchor's width, padding included.
+            Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                OutlinedTextField(
+                    value = name.value,
+                    // `singleLine` lays the field out on one line but doesn't police what arrives: paste
+                    // a block of text and everything past the first break is stored, and saved, where it
+                    // can't be seen. Breaks (and the indentation around them) fold into single spaces.
+                    onValueChange = {
+                        name.value = it.replace(LINE_BREAK_RUN, " ")
+                        query.value = name.value
+                    },
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.places_name_field)) },
+                    // Place names are proper nouns — capitalize each word.
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth().then(anchor),
+                )
+            }
+        },
+    ) {
+        for (hit in shown) {
+            SearchResultRow(icon = Icons.Filled.TravelExplore, label = hit.name, detail = hit.locality) {
+                name.value = hit.name
+                query.value = ""
+            }
+        }
+        OsmCredit()
+    }
 }
+
+/** A result outside the circle is somewhere else, whatever it is called. */
+internal fun nameSuggestions(
+    hits: List<OnlinePlaceSearch.Hit>,
+    pin: Coordinate,
+    radiusM: Double,
+    distance: DistanceFn,
+): List<OnlinePlaceSearch.Hit> =
+    OnlinePlaceSearch.distinctRows(hits.filter { distance.meters(pin.lat, pin.lon, it.lat, it.lon) <= radiusM })

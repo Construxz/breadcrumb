@@ -1,16 +1,19 @@
 package io.github.valeronm.breadcrumb.ui
 
 import android.content.Context
-import android.content.res.Configuration
 import android.util.Log
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.FloatState
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,10 +50,11 @@ import org.maplibre.android.offline.OfflineManager
 internal fun MapLibreStyledMap(
     modifier: Modifier = Modifier,
     onMapReady: (MapLibreMap) -> Unit = {},
-    onStyleLoaded: (Context, MapLibreMap, Style) -> Unit,
+    onStyleLoaded: (ctx: Context, map: MapLibreMap, style: Style, dark: Boolean) -> Unit,
     onUpdate: (MapLibreMap, Style) -> Unit,
 ) {
-    val mapView = rememberMapLibreMapView()
+    val dark = LocalMapDark.current ?: isSystemInDarkTheme()
+    val mapView = rememberMapLibreMapView(dark)
     val host = remember(mapView) { MapHost() }
     // The style loads asynchronously; inputs that arrive in the meantime recompose while the
     // style is still null, so their update is skipped. Route the callback through the host so the
@@ -69,8 +73,8 @@ internal fun MapLibreStyledMap(
                         val readZoom = { zoom.floatValue = map.cameraPosition.zoom.toFloat() }
                         if (BuildConfig.DEV_TOOLS) map.addOnCameraMoveListener(readZoom)
                         onMapReady(map)
-                        map.setStyle(Style.Builder().fromJson(loadProtomapsStyle(view.context))) { style ->
-                            host.onStyleLoaded(view.context, map, style)
+                        map.setStyle(Style.Builder().fromJson(styleFlavor(view.context, dark).json)) { style ->
+                            host.onStyleLoaded(view.context, map, style, dark)
                             // The opening frame is a moveCamera, which lands before this listener
                             // exists to hear it.
                             if (BuildConfig.DEV_TOOLS) readZoom()
@@ -112,7 +116,7 @@ private fun ZoomReadout(zoom: FloatState, modifier: Modifier = Modifier) {
 private class MapHost {
     var map: MapLibreMap? = null
     var inited = false
-    var onStyleLoaded: (Context, MapLibreMap, Style) -> Unit = { _, _, _ -> }
+    var onStyleLoaded: (Context, MapLibreMap, Style, Boolean) -> Unit = { _, _, _, _ -> }
 }
 
 /**
@@ -148,7 +152,7 @@ private fun raiseAmbientCacheCeiling(ctx: Context) {
 
 /** A MapLibre [MapView] whose lifecycle follows the composition's [LocalLifecycleOwner]. */
 @Composable
-private fun rememberMapLibreMapView(): MapView {
+private fun rememberMapLibreMapView(dark: Boolean): MapView {
     val ctx = LocalContext.current
     val mapView = remember {
         MapLibre.getInstance(ctx)
@@ -159,9 +163,9 @@ private fun rememberMapLibreMapView(): MapView {
         // edge-swipe handling is needed on the view itself.
         val options = MapLibreMapOptions.createFromAttributes(ctx)
             .textureMode(true)
-            // Shown until the first rendered frame; defaults to white, which flashes hard
-            // against a dark UI.
-            .foregroundLoadColor(styleBackgroundColor(ctx))
+            // The default white shows until the first frame and flashes hard against a dark basemap.
+            // Taken from the style rather than spelled here, so a style refresh keeps it matching.
+            .foregroundLoadColor(styleFlavor(ctx, dark).backgroundColor)
         MapView(ctx, options).apply {
             onCreate(null)
             onStart()
@@ -228,39 +232,39 @@ internal fun frameTo(map: MapLibreMap, positions: List<LatLng>, singlePointZoom:
     }
 }
 
-/** Whether the UI is in dark mode — the single switch for basemap flavor and map ink colors. */
-internal fun isDarkUi(ctx: Context): Boolean =
-    (ctx.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-        Configuration.UI_MODE_NIGHT_YES
+/** The shade [MapShade] set, or null where the maps follow the app theme. */
+private val LocalMapDark = compositionLocalOf<Boolean?> { null }
+
+/** Draws the maps in [content] light or dark whatever the app theme is. Keyed on [dark] because a
+ *  map's style loads once per [MapView]. */
+@Composable
+internal fun MapShade(dark: Boolean, content: @Composable () -> Unit) {
+    key(dark) {
+        CompositionLocalProvider(LocalMapDark provides dark, content = content)
+    }
+}
 
 private val BACKGROUND_COLOR_RE = Regex("\"background-color\":\\s*\"(#[0-9a-fA-F]{6})\"")
 
 /** One flavor's resolved style: the key-injected JSON and its own background color. */
-private class StyleFlavor(val asset: String, val json: String, val backgroundColor: Int)
+private class StyleFlavor(val json: String, val backgroundColor: Int)
 
-/** The current flavor's resolved style, cached by asset name — read for every map creation. */
-private var cachedStyle: StyleFlavor? = null
-
-/**
- * The bundled official Protomaps style for the current theme (assets/protomaps-{dark,light}.json)
- * with the hosted-API key injected. The background color is scanned out on the same cache miss:
- * it is a constant of the flavor, and the document is ~268 KB — far too big to re-scan per map.
- */
-private fun styleFlavor(ctx: Context): StyleFlavor {
-    val asset = if (isDarkUi(ctx)) "protomaps-dark.json" else "protomaps-light.json"
-    cachedStyle?.let { if (it.asset == asset) return it }
-    val json = ctx.assets.open(asset).bufferedReader().use { it.readText() }
-        .replace("{PROTOMAPS_KEY}", BuildConfig.PROTOMAPS_API_KEY)
-    val background = BACKGROUND_COLOR_RE.find(json)
-        ?.groupValues?.get(1)?.let(android.graphics.Color::parseColor)
-        ?: android.graphics.Color.DKGRAY
-    return StyleFlavor(asset, json, background).also { cachedStyle = it }
-}
-
-private fun loadProtomapsStyle(ctx: Context): String = styleFlavor(ctx).json
+/** Both shades can be on screen at once, and a style is read for every map creation. */
+private val cachedStyles = HashMap<Boolean, StyleFlavor>()
 
 /**
- * The style's own `background` layer color — used as the pre-render placeholder so a style
- * refresh can't desync the load flash from the basemap.
+ * The bundled official Protomaps style for the [dark] or light shade
+ * (assets/protomaps-{dark,light}.json) with the hosted-API key injected. The background color is
+ * scanned out on the same cache miss: it is a constant of the flavor, and the document is ~268 KB —
+ * far too big to re-scan per map.
  */
-private fun styleBackgroundColor(ctx: Context): Int = styleFlavor(ctx).backgroundColor
+private fun styleFlavor(ctx: Context, dark: Boolean): StyleFlavor =
+    cachedStyles.getOrPut(dark) {
+        val asset = if (dark) "protomaps-dark.json" else "protomaps-light.json"
+        val json = ctx.assets.open(asset).bufferedReader().use { it.readText() }
+            .replace("{PROTOMAPS_KEY}", BuildConfig.PROTOMAPS_API_KEY)
+        val background = BACKGROUND_COLOR_RE.find(json)
+            ?.groupValues?.get(1)?.let(android.graphics.Color::parseColor)
+            ?: android.graphics.Color.DKGRAY
+        StyleFlavor(json, background)
+    }

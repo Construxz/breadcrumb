@@ -38,6 +38,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.valeronm.breadcrumb.R
+import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.PlaceResolver
 import io.github.valeronm.breadcrumb.domain.PlaceSearch
 import io.github.valeronm.breadcrumb.domain.TimelineItem
@@ -85,6 +86,8 @@ internal fun PlacesTab(
      *  one that consumes it. */
     homeRequest: Int,
     onOpenPlace: (String) -> Unit,
+    /** Starts a new place where the crosshair points, somewhere no stop has been found. */
+    onCreatePlaceAt: (Coordinate) -> Unit,
 ) {
     val context = LocalContext.current
     val derivedPlaces by viewModel.places.collectAsStateWithLifecycle()
@@ -212,6 +215,7 @@ internal fun PlacesTab(
                         },
                         homeRequest = homeRequest,
                         onOpenPlace = onOpenPlace,
+                        onCreatePlaceAt = onCreatePlaceAt,
                     )
                 }
 
@@ -242,7 +246,13 @@ private fun PlacesMapPage(
     onToggleRareStops: () -> Unit,
     homeRequest: Int,
     onOpenPlace: (String) -> Unit,
+    onCreatePlaceAt: (Coordinate) -> Unit,
 ) {
+    val shade = rememberMapShade()
+    val myLocation = rememberMyLocation()
+    // Where the map is looking, and whether the crosshair is up to start a place there.
+    var mapCenter by remember { mutableStateOf<Coordinate?>(null) }
+    var aiming by remember { mutableStateOf(false) }
     // Card padding keeps the texture-mode map off the back-gesture edge strips.
     Card(
         Modifier
@@ -262,11 +272,33 @@ private fun PlacesMapPage(
                     Modifier.fillMaxSize().padding(24.dp),
                 )
             } else {
-                MapLibrePlacesMap(
-                    places = mapPlaces,
-                    frameKey = homeRequest,
-                    onOpen = onOpenPlace,
-                    modifier = Modifier.fillMaxSize(),
+                MapShade(shade.dark) {
+                    MapLibrePlacesMap(
+                        places = mapPlaces,
+                        frameKey = homeRequest,
+                        onOpen = onOpenPlace,
+                        camera = shade.camera,
+                        modifier = Modifier.fillMaxSize(),
+                        userLocation = myLocation.position,
+                        goTo = myLocation.goTo,
+                        onCenterSettled = { mapCenter = it },
+                    )
+                }
+                // A place where no stop has been found: the crosshair is dropped wherever the map
+                // looks — the phone's position after the location button, or anywhere panned to.
+                if (aiming) AimOverlay()
+                MapCornerControls(
+                    shade = shade,
+                    location = myLocation,
+                    aiming = aiming,
+                    aimDescription = stringResource(R.string.places_new_place),
+                    confirmLabel = stringResource(R.string.places_new_here),
+                    onAim = { aiming = true },
+                    onCancelAim = { aiming = false },
+                    onConfirmAim = {
+                        mapCenter?.let(onCreatePlaceAt)
+                        aiming = false
+                    },
                 )
             }
             MapFilterChip(
