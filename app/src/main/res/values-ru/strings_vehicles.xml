@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vehicles_title">Транспорт</string>
+    <string name="vehicles_description">Поездка, во время которой подключено одно из ваших транспортных средств, получает его тип и название.</string>
+    <string name="vehicles_add">Добавить транспорт</string>
+    <string name="vehicles_confirm_add">Добавить</string>
+    <string name="vehicles_name">Название</string>
+    <string name="vehicles_no_links">Пока ничем не распознаётся</string>
+    <plurals name="vehicles_link_count">
+        <item quantity="one">Распознаётся по %d подключению</item>
+        <item quantity="few">Распознаётся по %d подключениям</item>
+        <item quantity="many">Распознаётся по %d подключениям</item>
+        <item quantity="other">Распознаётся по %d подключения</item>
+    </plurals>
+    <string name="vehicles_type">Тип</string>
+    <string name="vehicles_links">Распознаётся по</string>
+    <string name="vehicles_links_description">Его Bluetooth, его точка доступа Wi-Fi или и то и другое. Приложение отмечает эти подключения только во время записи и хранит их на телефоне.</string>
+    <string name="vehicles_kind_bluetooth">Bluetooth</string>
+    <string name="vehicles_kind_wifi">Wi-Fi</string>
+    <string name="vehicles_add_bluetooth">Добавить устройство Bluetooth</string>
+    <string name="vehicles_add_current_wifi">Добавить текущую сеть Wi-Fi</string>
+    <string name="vehicles_add_wifi_by_name">Ввести название сети Wi-Fi</string>
+    <string name="vehicles_wifi_name">Название сети Wi-Fi</string>
+    <string name="vehicles_no_wifi">Телефон не подключён к Wi-Fi, или Android не показывает название сети</string>
+    <string name="vehicles_no_paired_devices">Нет сопряжённых устройств. Сначала выполните сопряжение в настройках Bluetooth телефона.</string>
+    <string name="vehicles_link_taken">Это уже используется другим транспортом</string>
+    <string name="vehicles_remove_link">Удалить</string>
+    <string name="vehicles_delete">Удалить транспорт</string>
+    <string name="vehicles_delete_text">Поездки на «%1$s» сохранят свой тип.</string>
+    <string name="vehicles_delete_confirm">Удалить</string>
+</resources>
