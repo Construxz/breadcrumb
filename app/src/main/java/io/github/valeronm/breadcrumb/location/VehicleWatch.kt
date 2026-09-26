@@ -26,7 +26,9 @@ import java.util.concurrent.ConcurrentHashMap
  * Watches the two kinds of link a vehicle can be recognised by while the recorder is armed: a
  * Bluetooth device connecting or disconnecting (by address), and the Wi-Fi network the phone is on
  * (by name). It reports every change of either to [onChange] and decides nothing — which of them
- * belong to a vehicle is the recorder's filter, so nothing about another device or network is kept.
+ * belong to a vehicle or a place is the recorder's filter. Of the rest, only the names of Wi-Fi
+ * networks the phone connected to are kept, briefly, as the list Settings → Connections offers;
+ * nothing about another Bluetooth device is.
  *
  * Both are event-driven and cost nothing between events: a broadcast for Bluetooth and a network
  * callback for Wi-Fi, neither of which scans. On [start] each also reports what is connected right

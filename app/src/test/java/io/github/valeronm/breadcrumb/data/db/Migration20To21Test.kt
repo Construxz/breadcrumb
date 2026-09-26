@@ -1,9 +1,5 @@
 package io.github.valeronm.breadcrumb.data.db
 
-import android.content.Context
-import androidx.room.Room
-import androidx.room.util.TableInfo
-import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,46 +47,6 @@ class Migration20To21Test {
             db.query("SELECT COUNT(*) FROM place_links").use { c ->
                 assertTrue(c.moveToFirst())
                 assertEquals(0, c.getInt(0))
-            }
-        } finally {
-            fixture.close()
-        }
-    }
-
-    /**
-     * **The guard a real upgrade is exposed to**, and this is where it belongs: Room compares what
-     * it finds against its entities on the first open after an upgrade, and only the *end* of the
-     * chain is ever compared that way — which is here. So this runs the chain from the oldest
-     * schema any install can be on, every migration in turn, and compares every table one of them
-     * wrote. [TableInfo] is the shape Room compares, rather than the `CREATE` text, so formatting is
-     * not mistaken for drift.
-     *
-     * Move it into the next migration's test when one lands, for the same reason it sits here.
-     */
-    @Suppress("DEPRECATION")
-    @Test
-    fun `the migrated tables are the shape Room builds from the entities`() {
-        val fixture = MigrationDb(19, ::createV19Schema)
-        try {
-            val db = fixture.db
-            AppDatabase.MIGRATION_19_20.migrate(db)
-            AppDatabase.MIGRATION_20_21.migrate(db)
-
-            val room = Room.inMemoryDatabaseBuilder(
-                ApplicationProvider.getApplicationContext<Context>(),
-                AppDatabase::class.java,
-            ).allowMainThreadQueries().build()
-            try {
-                val generated = room.openHelper.writableDatabase
-                val tables = listOf(
-                    "tracks", "derived_intervals", "places",
-                    "vehicles", "vehicle_links", "link_connections", "place_links",
-                )
-                for (table in tables) {
-                    assertEquals(table, TableInfo.read(generated, table), TableInfo.read(db, table))
-                }
-            } finally {
-                room.close()
             }
         } finally {
             fixture.close()

@@ -28,4 +28,7 @@
         <item quantity="many">Распознаётся по %d подключениям</item>
         <item quantity="other">Распознаётся по %d подключения</item>
     </plurals>
+    <string name="connections_seen_title">Недавние сети Wi-Fi</string>
+    <string name="connections_seen_description">Сети, к которым телефон подключался при включённой записи за последние две недели. Нажмите на сеть, чтобы указать, что она обозначает.</string>
+    <string name="connections_seen_at">Подключение: %1$s</string>
 </resources>

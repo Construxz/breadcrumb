@@ -26,4 +26,7 @@
         <item quantity="one">Reconhecido por %d ligação</item>
         <item quantity="other">Reconhecido por %d ligações</item>
     </plurals>
+    <string name="connections_seen_title">Redes Wi-Fi ligadas recentemente</string>
+    <string name="connections_seen_description">Redes a que o telemóvel se ligou com a gravação ligada, nas últimas duas semanas. Toque numa para dizer o que representa.</string>
+    <string name="connections_seen_at">Ligada em %1$s</string>
 </resources>

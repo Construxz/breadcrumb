@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import io.github.valeronm.breadcrumb.data.db.AppDatabase
 import io.github.valeronm.breadcrumb.data.db.PlaceLink
+import io.github.valeronm.breadcrumb.data.db.SeenNetwork
 import io.github.valeronm.breadcrumb.data.db.VehicleLink
 import io.github.valeronm.breadcrumb.domain.VehicleLinkKind
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +30,7 @@ class ConnectionRepository(context: Context, private val db: AppDatabase = AppDa
 
     private val vehicleLinks = db.vehicleDao()
     private val placeLinks = db.placeLinkDao()
+    private val seen = db.seenNetworkDao()
 
     fun observeConnections(): Flow<List<Connection>> =
         combine(vehicleLinks.observeLinks(), placeLinks.observeLinks()) { vehicles, places ->
@@ -82,6 +84,26 @@ class ConnectionRepository(context: Context, private val db: AppDatabase = AppDa
         placeLinks.allLinks().mapNotNull { link ->
             VehicleLinkKind.fromCode(link.kind)?.let { (it to link.key) to link }
         }.toMap()
+
+    /** The Wi-Fi networks the phone connected to lately, newest first — the list to assign from. */
+    fun observeSeenNetworks(): Flow<List<SeenNetwork>> = seen.observe()
+
+    /**
+     * Notes the phone connecting to [ssid] at [atMs]. [moving] says a track is open, when where the
+     * timeline stands is no answer to where the network is; otherwise the place the last track
+     * ended in is remembered beside it, as the suggestion the list makes.
+     */
+    suspend fun noteSeen(ssid: String, atMs: Long, moving: Boolean) {
+        db.withTransaction {
+            seen.note(ssid, atMs, if (moving) null else seen.lastEndPlaceId())
+        }
+    }
+
+    /** Drops [ssid] from the list — the user saying it is nothing of theirs. */
+    suspend fun forgetSeen(ssid: String) = seen.forget(ssid)
+
+    /** Drops what was last seen before [beforeMs]. */
+    suspend fun purgeSeen(beforeMs: Long) = seen.purge(beforeMs)
 
     /** What the place a link stands for is called, for the notification's line. */
     suspend fun placeLabel(placeId: Long): String? = placeLinks.placeLabel(placeId)

@@ -31,6 +31,7 @@ import io.github.valeronm.breadcrumb.data.LinkOwner
 import io.github.valeronm.breadcrumb.data.PlaceRepository
 import io.github.valeronm.breadcrumb.data.VehicleRepository
 import io.github.valeronm.breadcrumb.data.db.Place
+import io.github.valeronm.breadcrumb.data.db.SeenNetwork
 import io.github.valeronm.breadcrumb.data.db.Vehicle
 import io.github.valeronm.breadcrumb.domain.ActivityType
 import io.github.valeronm.breadcrumb.domain.VehicleLinkKind
@@ -44,7 +45,9 @@ private data class Pick(val kind: VehicleLinkKind, val key: String, val label: S
 /**
  * Settings → Connections: every Bluetooth device and Wi-Fi network the user tied to a vehicle or a
  * place, in one list, each saying what it stands for. Tapping one moves it to another vehicle or
- * place; adding one here asks where it belongs. The vehicle and place editors add to the same
+ * place; adding one here asks where it belongs. Below them, the Wi-Fi networks the phone connected
+ * to lately that nothing stands for yet, each with the place it was seen at, so a network can be
+ * tied to a place from anywhere rather than only while connected to it. The vehicle and place editors add to the same
  * list — this page is where a device is seen across all of them, and the only one that can move it.
  */
 @Composable
@@ -55,6 +58,7 @@ internal fun ConnectionsScreen(onBack: () -> Unit) {
     val all by remember { connections.observeConnections() }.collectAsStateWithLifecycle(emptyList())
     val vehicles by remember { VehicleRepository(context).observeVehicles() }.collectAsStateWithLifecycle(emptyList())
     val places by remember { PlaceRepository(context).observePlaces() }.collectAsStateWithLifecycle(emptyList())
+    val seen by remember { connections.observeSeenNetworks() }.collectAsStateWithLifecycle(emptyList())
     var assigning by remember { mutableStateOf<Pick?>(null) }
     var current by remember { mutableStateOf<LinkOwner?>(null) }
 
@@ -96,6 +100,41 @@ internal fun ConnectionsScreen(onBack: () -> Unit) {
                                 connections.remove(connection.kind, connection.key)
                                 changed()
                             }
+                        }
+                    }
+                }.toTypedArray(),
+            )
+        }
+        // What the phone connected to lately and nothing stands for yet — the way to tie a network
+        // to a place from anywhere, Android letting no app read the phone's saved networks.
+        val unassigned = seen.filter { network ->
+            all.none { it.kind == VehicleLinkKind.WIFI && it.key == network.ssid }
+        }
+        if (unassigned.isNotEmpty()) {
+            Spacer(Modifier.height(24.dp))
+            Text(stringResource(R.string.connections_seen_title), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.connections_seen_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            GroupedRows(
+                *unassigned.map<SeenNetwork, @Composable () -> Unit> { network ->
+                    {
+                        val at = network.placeId?.let { id -> places.firstOrNull { it.id == id }?.label }
+                        ConnectionRow(
+                            VehicleLinkKind.WIFI,
+                            network.ssid,
+                            subtitle = at?.let { stringResource(R.string.connections_seen_at, it) }
+                                ?: kindLabel(VehicleLinkKind.WIFI),
+                            onClick = {
+                                // The place it was seen at, offered as the tick to confirm.
+                                current = network.placeId?.let { LinkOwner.OfPlace(it) }
+                                assigning = Pick(VehicleLinkKind.WIFI, network.ssid, network.ssid)
+                            },
+                        ) {
+                            scope.launch { connections.forgetSeen(network.ssid) }
                         }
                     }
                 }.toTypedArray(),

@@ -21,11 +21,16 @@ app records, where it keeps it, and the few things that leave the phone.
   by hand, and any GPX files you open in the app.
 - **When your vehicles connect**, if you set any up under Settings → Vehicles. You tell the app
   which Bluetooth device or Wi-Fi network belongs to a vehicle. While recording is on, the app
-  notes when one of those connects and disconnects. It notes nothing about any other device or
-  network. It keeps these notes for two weeks and uses them to tell which vehicle a trip was in.
+  notes when one of those connects and disconnects. It notes nothing about any other Bluetooth
+  device. It keeps these notes for two weeks and uses them to tell which vehicle a trip was in.
 - **Which networks mean a place**, if you tie a Bluetooth device or Wi-Fi network to one of your
   places. While recording is on, the notification says when your phone is connected to it. The app
   keeps no record of those connections.
+- **The names of Wi-Fi networks your phone joins** while recording is on. The app keeps each name
+  with the time it last connected and the named place you were at. It shows them under
+  Settings → Connections, so you can tie one to a vehicle or a place later. It keeps each name for
+  two weeks after the last connection. You can remove one there at any time. The app never sends
+  them anywhere.
 
 Everything else the app shows is worked out on the phone from those records: the stays between
 trips, the places you return to, and journeys away from home.

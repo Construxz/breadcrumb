@@ -91,4 +91,60 @@ class ConnectionRepositoryTest {
         connections.remove(VehicleLinkKind.WIFI, "HomeNet")
         assertTrue(connections.observeConnections().first().isEmpty())
     }
+
+    /** A track that ended at [placeId]'s cluster at [atMs], as the derivation would store it. */
+    private fun endedAt(trackId: Long, placeId: Long?, atMs: Long) {
+        val sql = test.db.openHelper.writableDatabase
+        sql.execSQL(
+            "INSERT INTO derived_clusters (id, placeId, anchorLat, anchorLon, radiusM, sumLat, sumLon, memberCount) " +
+                "VALUES ($trackId, ${placeId ?: "NULL"}, 1.0, -2.0, 75.0, 1.0, -2.0, 1)",
+        )
+        sql.execSQL(
+            "INSERT INTO cluster_members (clusterId, trackId, isStart, lat, lon, atMs) " +
+                "VALUES ($trackId, $trackId, 0, 1.0, -2.0, $atMs)",
+        )
+    }
+
+    @Test fun `a network seen while standing is remembered with the place the last trip ended at`() = runTest {
+        val home = place("Home")
+        val work = place("Work")
+        endedAt(1, work, 1_000L)
+        endedAt(2, home, 2_000L)
+
+        connections.noteSeen("HomeNet", 3_000L, moving = false)
+
+        val seen = connections.observeSeenNetworks().first().single()
+        assertEquals("HomeNet", seen.ssid)
+        assertEquals(3_000L, seen.lastSeenAt)
+        assertEquals(home, seen.placeId)
+    }
+
+    @Test fun `connecting on the move keeps the place it was seen at before`() = runTest {
+        val home = place("Home")
+        endedAt(1, home, 1_000L)
+        connections.noteSeen("HomeNet", 2_000L, moving = false)
+
+        connections.noteSeen("HomeNet", 9_000L, moving = true)
+
+        val seen = connections.observeSeenNetworks().first().single()
+        assertEquals(9_000L, seen.lastSeenAt)
+        assertEquals(home, seen.placeId)
+    }
+
+    @Test fun `an unnamed stop suggests no place`() = runTest {
+        endedAt(1, null, 1_000L)
+        connections.noteSeen("CafeNet", 2_000L, moving = false)
+        assertEquals(null, connections.observeSeenNetworks().first().single().placeId)
+    }
+
+    @Test fun `seen networks age out and can be forgotten`() = runTest {
+        connections.noteSeen("Old", 1_000L, moving = true)
+        connections.noteSeen("Kept", 5_000L, moving = true)
+        connections.noteSeen("Unwanted", 6_000L, moving = true)
+
+        connections.purgeSeen(2_000L)
+        connections.forgetSeen("Unwanted")
+
+        assertEquals(listOf("Kept"), connections.observeSeenNetworks().first().map { it.ssid })
+    }
 }
