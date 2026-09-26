@@ -135,4 +135,6 @@
     <string name="geopulse_failure_unauthorized">Сервер отклонил имя пользователя или пароль</string>
     <string name="geopulse_failure_unreachable">Не удалось связаться с сервером. Приложение попробует снова.</string>
     <string name="geopulse_failure_http">Сервер ответил ошибкой %1$d. Приложение попробует снова.</string>
+    <string name="privacy_place_addresses">Адреса мест</string>
+    <string name="privacy_place_addresses_sub">Показывает адрес каждого места в списке «Места». Отправляет расположение каждого места в тот же сервис.</string>
 </resources>

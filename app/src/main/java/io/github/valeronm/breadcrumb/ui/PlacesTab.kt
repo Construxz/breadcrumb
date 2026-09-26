@@ -38,6 +38,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -57,6 +58,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.valeronm.breadcrumb.BuildConfig
 import io.github.valeronm.breadcrumb.R
 import io.github.valeronm.breadcrumb.domain.Coordinate
+import io.github.valeronm.breadcrumb.data.PlaceAddresses
 import io.github.valeronm.breadcrumb.domain.PlaceResolver
 import io.github.valeronm.breadcrumb.domain.PlaceSearch
 import io.github.valeronm.breadcrumb.domain.TimelineItem
@@ -488,6 +490,13 @@ private fun PlaceRow(
     // the disc's description.
     val category = summary.place?.placeCategory
     val disc = placeDiscStyle(category)
+    val metric = placeSubtitle(summary, sort)
+    // Where the place is, when the reader asked for addresses — looked up once, as the row scrolls
+    // into view, and kept; the row reads as before until one arrives.
+    val context = LocalContext.current
+    val address by produceState(PlaceAddresses.cached(context, summary.pin).takeIf { PlaceAddresses.enabled(context) }, summary.pin) {
+        value = PlaceAddresses.addressOf(context, summary.pin)
+    }
     ListRowCard(
         shape = shape,
         onClick = onClick,
@@ -498,7 +507,9 @@ private fun PlaceRow(
         // worked-out name never reads as one they chose — the same rule the timeline's rows follow.
         title = summary.name ?: stringResource(R.string.place_detected_stop),
         titleColor = placeTitleColor(named),
-        subtitle = AnnotatedString(placeSubtitle(summary, sort)),
+        subtitle = AnnotatedString(
+            address?.let { stringResource(R.string.place_row_address, it, metric) } ?: metric,
+        ),
     )
 }
 

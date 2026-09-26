@@ -974,7 +974,12 @@ why the workflow is the only thing standing between a forgotten bump and Play.
   or the pin of the place being named — never wherever the map happens to be looking**: the form's
   own place list sorts by the map centre because re-ordering rows the device already holds discloses
   nothing, and that is the whole reason the two use different anchors. The ODbL credit in Settings
-  and at the results is a licence requirement, like the GeoNames one. **The second exception is
+  and at the results is a licence requirement, like the GeoNames one. The Places list's **street
+  addresses** (`data/PlaceAddresses`, Photon's reverse lookup) ride on the same switch plus one of
+  their own that is off by default, since they send each listed place's *pin*: looked up as a row
+  scrolls into view, one request at a time and spaced out, kept on the phone keyed by the pin, and
+  wiped when their switch goes off. Where the house number sits is the address's country's
+  convention, not the reader's language (`AddressLine`). **The second exception is
   the GeoPulse upload** (`data/geopulse/`), off by default: it sends each **finished, kept** recorder
   track to a server the user names, one OwnTracks HTTP `location` message per good point
   (`OwnTracksHttp`) under Basic auth — OwnTracks because it is the one GeoPulse ingest that keeps

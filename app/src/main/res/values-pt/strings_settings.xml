@@ -133,4 +133,6 @@
     <string name="geopulse_failure_unauthorized">O servidor recusou o nome de utilizador ou a palavra-passe</string>
     <string name="geopulse_failure_unreachable">Não foi possível contactar o servidor. A app vai tentar de novo.</string>
     <string name="geopulse_failure_http">O servidor respondeu com o erro %1$d. A app vai tentar de novo.</string>
+    <string name="privacy_place_addresses">Moradas dos locais</string>
+    <string name="privacy_place_addresses_sub">Mostra a morada de cada local na lista de Locais. Envia a localização de cada local ao mesmo serviço.</string>
 </resources>

@@ -66,6 +66,10 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   and where the place is on the map.
   You can turn the search off under Settings → Privacy.
   The app then searches only the list of cities built into it, and suggests no names.
+- **Addresses of your places**, if you turn them on under Settings → Privacy. The Places list can
+  show each place's street address. For that the app sends the location of each place it shows to
+  the same service. The app keeps the addresses on your phone, so it asks for each place only once.
+  This is off until you turn it on. Turning it off also deletes the addresses the app kept.
 - **Your trips, if you connect a GeoPulse server.** Under Settings → Privacy you can give the app
   the address of your own [GeoPulse](https://github.com/tess1o/geopulse) server, with a username and
   password. The app then sends each trip to that server once the trip has ended. It sends the trip's

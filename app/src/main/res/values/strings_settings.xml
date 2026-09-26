@@ -164,4 +164,6 @@
     <string name="geopulse_failure_unauthorized">The server refused the username or password</string>
     <string name="geopulse_failure_unreachable">Couldn\'t reach the server. The app will try again.</string>
     <string name="geopulse_failure_http">The server answered with error %1$d. The app will try again.</string>
+    <string name="privacy_place_addresses">Addresses of places</string>
+    <string name="privacy_place_addresses_sub">Shows the street address of each place in the Places list. Sends each place\'s location to the same service.</string>
 </resources>
