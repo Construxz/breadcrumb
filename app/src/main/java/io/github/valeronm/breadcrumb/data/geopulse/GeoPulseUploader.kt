@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -65,6 +66,23 @@ object GeoPulseUploader {
     fun state(context: Context): StateFlow<State> {
         mutableState.update { it.copy(sentThroughMs = GeoPulseSettings.sentThroughMs(context)) }
         return mutableState.asStateFlow()
+    }
+
+    /**
+     * Whether the server takes the connection as configured: null when it does, the reason when it
+     * does not. Sends [OwnTracksHttp.PROBE], so it writes nothing on the server, and asks nothing of
+     * the upload's switch — a connection is worth checking before it is turned on.
+     */
+    suspend fun testConnection(context: Context): Failure? = withContext(Dispatchers.IO) {
+        val connection = GeoPulseSettings.connection(context.applicationContext)
+            ?: return@withContext Failure.NotConfigured
+        val failure = when (val outcome = post(connection, OwnTracksHttp.PROBE)) {
+            Outcome.Accepted -> null
+            Outcome.Refused -> Failure.Http(HttpURLConnection.HTTP_BAD_REQUEST)
+            is Outcome.Failed -> outcome.failure
+        }
+        DebugLog.i(TAG, "connection test: ${failure ?: "ok"}")
+        failure
     }
 
     /** Starts a pass unless one is running or the upload is off. */

@@ -125,6 +125,11 @@ class OwnTracksHttpTest {
         assertTrue(json, json.endsWith(",\"ext\":{\"track_id\":7,\"activity\":\"A\\\"B\\\\C\",\"segment_start\":true}}"))
     }
 
+    @Test fun `the connection test carries no position, so the server stores nothing`() {
+        assertEquals("{\"_type\":\"encrypted\"}", OwnTracksHttp.PROBE)
+        listOf("lat", "lon", "tst", "data").forEach { assertFalse(it, "\"$it\"" in OwnTracksHttp.PROBE) }
+    }
+
     @Test fun `statuses sort into sent, skipped for good, and retried`() {
         assertEquals(Outcome.Accepted, OwnTracksHttp.outcomeOf(200))
         assertEquals(Outcome.Accepted, OwnTracksHttp.outcomeOf(204))

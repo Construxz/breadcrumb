@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +30,7 @@ import io.github.valeronm.breadcrumb.R
 import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseSettings
 import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseUploader
 import io.github.valeronm.breadcrumb.data.geopulse.OwnTracksHttp.Failure
+import kotlinx.coroutines.launch
 
 /**
  * The GeoPulse connection on the Privacy page, below the online services it joins: a switch, one
@@ -45,6 +47,8 @@ internal fun GeoPulseGroup() {
     var shareActivity by remember { mutableStateOf(GeoPulseSettings.shareActivity(context)) }
     var sharePlaces by remember { mutableStateOf(GeoPulseSettings.sharePlaces(context)) }
     val state by remember { GeoPulseUploader.state(context) }.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var probe by remember { mutableStateOf<Probe>(Probe.Idle) }
     SettingsGroup(
         stringResource(R.string.geopulse_title),
         stringResource(R.string.geopulse_description),
@@ -112,26 +116,75 @@ internal fun GeoPulseGroup() {
                 }
             },
             {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        statusText(enabled, state),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (enabled && state.failure != null) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        onClick = { GeoPulseUploader.sync(context) },
-                        enabled = enabled && !state.sending,
-                    ) {
-                        Text(stringResource(R.string.geopulse_send_now))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            probeText(probe),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = when (val shown = probe) {
+                                is Probe.Done -> if (shown.failure == null) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            onClick = {
+                                probe = Probe.Running
+                                scope.launch { probe = Probe.Done(GeoPulseUploader.testConnection(context)) }
+                            },
+                            enabled = probe != Probe.Running,
+                        ) {
+                            Text(stringResource(R.string.geopulse_test))
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            statusText(enabled, state),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (enabled && state.failure != null) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            onClick = { GeoPulseUploader.sync(context) },
+                            enabled = enabled && !state.sending,
+                        ) {
+                            Text(stringResource(R.string.geopulse_send_now))
+                        }
                     }
                 }
             },
         )
+    }
+}
+
+/** Where the connection test stands; its answer is kept until the next test, not tied to the fields. */
+private sealed interface Probe {
+    data object Idle : Probe
+
+    data object Running : Probe
+
+    /** [failure] null is a server that took the credentials. */
+    data class Done(val failure: Failure?) : Probe
+}
+
+@Composable
+private fun probeText(probe: Probe): String = when (probe) {
+    Probe.Idle -> stringResource(R.string.geopulse_test_hint)
+    Probe.Running -> stringResource(R.string.geopulse_testing)
+    is Probe.Done -> when (val failure = probe.failure) {
+        null -> stringResource(R.string.geopulse_test_ok)
+        Failure.NotConfigured -> stringResource(R.string.geopulse_failure_not_configured)
+        Failure.Unauthorized -> stringResource(R.string.geopulse_failure_unauthorized)
+        Failure.Unreachable -> stringResource(R.string.geopulse_test_unreachable)
+        is Failure.Http -> stringResource(R.string.geopulse_test_http, failure.status)
     }
 }
 

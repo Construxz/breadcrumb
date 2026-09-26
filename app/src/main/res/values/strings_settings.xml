@@ -150,6 +150,12 @@
     <string name="geopulse_username">Username</string>
     <string name="geopulse_password">Password</string>
     <string name="geopulse_device">Device name</string>
+    <string name="geopulse_test">Test connection</string>
+    <string name="geopulse_test_hint">Checks the address and login. Nothing is saved on the server.</string>
+    <string name="geopulse_testing">Testing…</string>
+    <string name="geopulse_test_ok">Connected. The server accepts this login.</string>
+    <string name="geopulse_test_unreachable">Couldn\'t reach the server. Check the address and the connection.</string>
+    <string name="geopulse_test_http">The server answered with error %1$d. Check the address.</string>
     <string name="geopulse_send_now">Send now</string>
     <string name="geopulse_status_off">Nothing is sent</string>
     <string name="geopulse_status_sending">Sending…</string>

@@ -119,6 +119,12 @@
     <string name="geopulse_username">Nome de utilizador</string>
     <string name="geopulse_password">Palavra-passe</string>
     <string name="geopulse_device">Nome do dispositivo</string>
+    <string name="geopulse_test">Testar ligação</string>
+    <string name="geopulse_test_hint">Verifica o endereço e o início de sessão. Nada é guardado no servidor.</string>
+    <string name="geopulse_testing">A testar…</string>
+    <string name="geopulse_test_ok">Ligado. O servidor aceita estes dados de acesso.</string>
+    <string name="geopulse_test_unreachable">Não foi possível contactar o servidor. Verifique o endereço e a ligação.</string>
+    <string name="geopulse_test_http">O servidor respondeu com o erro %1$d. Verifique o endereço.</string>
     <string name="geopulse_send_now">Enviar agora</string>
     <string name="geopulse_status_off">Nada é enviado</string>
     <string name="geopulse_status_sending">A enviar…</string>

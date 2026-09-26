@@ -121,6 +121,12 @@
     <string name="geopulse_username">Имя пользователя</string>
     <string name="geopulse_password">Пароль</string>
     <string name="geopulse_device">Имя устройства</string>
+    <string name="geopulse_test">Проверить подключение</string>
+    <string name="geopulse_test_hint">Проверяет адрес и данные для входа. На сервере ничего не сохраняется.</string>
+    <string name="geopulse_testing">Проверка…</string>
+    <string name="geopulse_test_ok">Подключено. Сервер принимает эти данные для входа.</string>
+    <string name="geopulse_test_unreachable">Не удалось связаться с сервером. Проверьте адрес и подключение.</string>
+    <string name="geopulse_test_http">Сервер ответил ошибкой %1$d. Проверьте адрес.</string>
     <string name="geopulse_send_now">Отправить сейчас</string>
     <string name="geopulse_status_off">Ничего не отправляется</string>
     <string name="geopulse_status_sending">Отправка…</string>

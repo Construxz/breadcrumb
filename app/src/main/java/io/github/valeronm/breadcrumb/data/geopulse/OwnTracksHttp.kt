@@ -41,6 +41,13 @@ object OwnTracksHttp {
         return if (base.endsWith(PATH)) base else base + PATH
     }
 
+    /**
+     * The connection test's body: proves the address and the credentials and stores nothing.
+     * GeoPulse authenticates an encrypted message before opening it — a wrong password answers 401 —
+     * and drops one carrying no data unopened with a 200, so no point is ever written by it.
+     */
+    const val PROBE = "{\"_type\":\"encrypted\"}"
+
     /** The `Authorization` header for the credentials GeoPulse issues an OwnTracks source. */
     fun basicAuth(username: String, password: String): String =
         "Basic " + Base64.getEncoder().encodeToString("$username:$password".toByteArray(Charsets.UTF_8))
