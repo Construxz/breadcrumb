@@ -939,7 +939,10 @@ why the workflow is the only thing standing between a forgotten bump and Play.
   the GeoPulse upload** (`data/geopulse/`), off by default: it sends each **finished, kept** recorder
   track to a server the user names, one OwnTracks HTTP `location` message per good point
   (`OwnTracksHttp`) under Basic auth — OwnTracks because it is the one GeoPulse ingest that keeps
-  extra fields (`ext` → telemetry), which is how the track's activity label reaches it. Its queue
+  extra fields (`ext` → telemetry), which is how the track's activity label reaches it, and the
+  one that turns a `poi` into a favourite, which is how the named places at a track's ends do
+  (read off the stored derivation, so an end is named exactly when the timeline names it). Each of
+  those two has its own switch beside the upload's. Its queue
   is the database itself — good points of closed, undiscarded `recorded` tracks timed after a mark
   in `GeoPulseSettings` — so nothing is copied aside and an offline day costs only the wait;
   imports, typed trips and merge/split copies never reach it. Gaps inside a track are sent as they

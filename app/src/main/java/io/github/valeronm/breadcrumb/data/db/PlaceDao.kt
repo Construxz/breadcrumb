@@ -5,6 +5,9 @@ import androidx.room.Insert
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
+/** A track end a named place holds: which track, which end (its fix's time), and the name. */
+data class TrackEndPlace(val trackId: Long, val atMs: Long, val label: String)
+
 @Dao
 interface PlaceDao {
     @Insert
@@ -23,6 +26,18 @@ interface PlaceDao {
      */
     @Query("UPDATE places SET label = :label, lat = :lat, lon = :lon, radiusM = :radiusM WHERE id = :id")
     suspend fun update(id: Long, label: String, lat: Double, lon: Double, radiusM: Double)
+
+    /**
+     * The named places holding the ends of [trackIds] — the GeoPulse upload's `poi`. Read off the
+     * stored derivation, so an end is named exactly when the timeline names its stay. One-shot,
+     * never observed.
+     */
+    @Query(
+        "SELECT m.trackId AS trackId, m.atMs AS atMs, p.label AS label FROM cluster_members m " +
+            "JOIN derived_clusters c ON c.id = m.clusterId JOIN places p ON p.id = c.placeId " +
+            "WHERE m.trackId IN (:trackIds)",
+    )
+    suspend fun endPlacesOf(trackIds: Collection<Long>): List<TrackEndPlace>
 
     /** `PlaceCategory.code`, or null to untag. */
     @Query("UPDATE places SET category = :code WHERE id = :id")

@@ -111,6 +111,10 @@
     <string name="geopulse_description">Envia cada viagem que grava para o seu próprio servidor GeoPulse, depois de terminar</string>
     <string name="geopulse_enable">Enviar viagens para o GeoPulse</string>
     <string name="geopulse_enable_sub">Só as viagens que terminem depois de ativar esta opção</string>
+    <string name="geopulse_share_activity">Enviar a atividade</string>
+    <string name="geopulse_share_activity_sub">A pé, de bicicleta, de carro e assim por diante, como a viagem está marcada</string>
+    <string name="geopulse_share_places">Enviar nomes de locais</string>
+    <string name="geopulse_share_places_sub">Os nomes dos seus locais onde uma viagem começa ou termina</string>
     <string name="geopulse_server">Endereço do servidor</string>
     <string name="geopulse_username">Nome de utilizador</string>
     <string name="geopulse_password">Palavra-passe</string>

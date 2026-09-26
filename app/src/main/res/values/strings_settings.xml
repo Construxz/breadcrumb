@@ -142,6 +142,10 @@
     <string name="geopulse_description">Sends each trip you record to your own GeoPulse server once it has ended</string>
     <string name="geopulse_enable">Send trips to GeoPulse</string>
     <string name="geopulse_enable_sub">Only trips that end after you switch this on</string>
+    <string name="geopulse_share_activity">Send the activity</string>
+    <string name="geopulse_share_activity_sub">Walking, cycling, driving and so on, as the trip is labelled</string>
+    <string name="geopulse_share_places">Send place names</string>
+    <string name="geopulse_share_places_sub">The names of your places where a trip starts or ends</string>
     <string name="geopulse_server">Server address</string>
     <string name="geopulse_username">Username</string>
     <string name="geopulse_password">Password</string>

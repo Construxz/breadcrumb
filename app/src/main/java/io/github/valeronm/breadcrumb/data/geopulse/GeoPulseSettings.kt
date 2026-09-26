@@ -21,6 +21,8 @@ object GeoPulseSettings {
     private const val KEY_PASSWORD = "password"
     private const val KEY_DEVICE_ID = "device_id"
     private const val KEY_SENT_THROUGH_MS = "sent_through_ms"
+    private const val KEY_SHARE_ACTIVITY = "share_activity"
+    private const val KEY_SHARE_PLACES = "share_places"
 
     /** What GeoPulse files the points under when the user names no device. */
     const val DEFAULT_DEVICE_ID = "breadcrumb"
@@ -60,6 +62,19 @@ object GeoPulseSettings {
     fun deviceId(context: Context): String = prefs(context).getString(KEY_DEVICE_ID, "").orEmpty()
 
     fun setDeviceId(context: Context, value: String) = prefs(context).edit { putString(KEY_DEVICE_ID, value) }
+
+    /** Whether a point carries its trip's activity label. The position itself is the feature, so
+     *  it has no switch of its own — the upload's switch is that. */
+    fun shareActivity(context: Context): Boolean = prefs(context).getBoolean(KEY_SHARE_ACTIVITY, true)
+
+    fun setShareActivity(context: Context, enabled: Boolean) =
+        prefs(context).edit { putBoolean(KEY_SHARE_ACTIVITY, enabled) }
+
+    /** Whether a trip's ends carry the names of the places holding them. */
+    fun sharePlaces(context: Context): Boolean = prefs(context).getBoolean(KEY_SHARE_PLACES, true)
+
+    fun setSharePlaces(context: Context, enabled: Boolean) =
+        prefs(context).edit { putBoolean(KEY_SHARE_PLACES, enabled) }
 
     /** Every recorded point up to this instant (epoch ms, the point's own time) has been sent. */
     fun sentThroughMs(context: Context): Long = prefs(context).getLong(KEY_SENT_THROUGH_MS, 0L)

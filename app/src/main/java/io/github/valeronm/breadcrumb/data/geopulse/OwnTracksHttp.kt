@@ -55,9 +55,13 @@ object OwnTracksHttp {
      * (and nothing else does): the track's [activity] as the app labelled it, the track's id so
      * the points of one trip can be told apart, and `segment_start` on the first fix after the
      * recorder resumed across a stop. GeoPulse classifies trips from speed on its own; the label
-     * is there to be shown and filtered by, not to steer that.
+     * is there to be shown and filtered by, not to steer that. A null [activity] is left out.
+     *
+     * [poi] names the place this point is at — given on a trip's first or last point when a named
+     * place holds that end. GeoPulse turns it into a favourite of that name there, or renames the
+     * favourite already covering the spot.
      */
-    fun location(point: TrackPoint, activity: String?, createdAtSec: Long): String = buildString {
+    fun location(point: TrackPoint, activity: String?, poi: String?, createdAtSec: Long): String = buildString {
         append("{\"_type\":\"location\"")
         append(",\"lat\":").append(point.latitude)
         append(",\"lon\":").append(point.longitude)
@@ -68,14 +72,14 @@ object OwnTracksHttp {
         point.bearing.whole()?.let { append(",\"cog\":").append(it) }
         point.verticalAccuracy.whole()?.let { append(",\"vac\":").append(it) }
         append(",\"created_at\":").append(createdAtSec)
+        poi?.takeIf { it.isNotBlank() }?.let { append(",\"poi\":").append(jsonString(it.trim())) }
         append(",\"ext\":{\"track_id\":").append(point.trackId)
         activity?.let { append(",\"activity\":").append(jsonString(it)) }
         if (point.segmentStart) append(",\"segment_start\":true")
         append("}}")
     }
 
-    /** [value] as a JSON string literal. Labels are enum names today; a stored string is still
-     *  escaped rather than trusted to stay one. */
+    /** [value] as a JSON string literal — a place name is free text. */
     private fun jsonString(value: String): String = buildString {
         append('"')
         for (c in value) {

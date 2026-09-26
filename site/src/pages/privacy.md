@@ -56,8 +56,9 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   the address of your own [GeoPulse](https://github.com/tess1o/geopulse) server, with a username
   and password. The app then sends each trip to that server once the trip has ended. It sends
   the trip's points the way the OwnTracks app does. A point holds a position, its time, its
-  accuracy, altitude, speed and direction. It also says how you moved on that trip. Only trips
-  that end after you turn this on are sent. The app sends them to that address and nowhere else.
+  accuracy, altitude, speed and direction. It can also say how you moved on that trip. When a
+  trip starts or ends at one of your places, it can also send that place's name. You can turn
+  each of these two off on their own. Only trips that end after you turn this on are sent. The app sends them to that address and nowhere else.
   Turning it off stops the sending.
 - **What you export.** A trip shared as a GPX file, or a backup of your whole history, goes
   wherever you send it. The app never sends it anywhere on its own.

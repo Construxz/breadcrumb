@@ -31,8 +31,9 @@ import io.github.valeronm.breadcrumb.data.geopulse.GeoPulseUploader
 import io.github.valeronm.breadcrumb.data.geopulse.OwnTracksHttp.Failure
 
 /**
- * The GeoPulse connection on the Privacy page, below the online services it joins: a switch, the
- * credentials GeoPulse issues an OwnTracks source, and where the upload stands.
+ * The GeoPulse connection on the Privacy page, below the online services it joins: a switch, one
+ * switch per thing a point may carry beyond its position, the credentials GeoPulse issues an
+ * OwnTracks source, and where the upload stands.
  *
  * Every field is written as it is typed, like every other setting here — there is no save step to
  * forget — and the uploader reads them afresh at each pass.
@@ -41,6 +42,8 @@ import io.github.valeronm.breadcrumb.data.geopulse.OwnTracksHttp.Failure
 internal fun GeoPulseGroup() {
     val context = LocalContext.current
     var enabled by remember { mutableStateOf(GeoPulseSettings.isEnabled(context)) }
+    var shareActivity by remember { mutableStateOf(GeoPulseSettings.shareActivity(context)) }
+    var sharePlaces by remember { mutableStateOf(GeoPulseSettings.sharePlaces(context)) }
     val state by remember { GeoPulseUploader.state(context) }.collectAsStateWithLifecycle()
     SettingsGroup(
         stringResource(R.string.geopulse_title),
@@ -57,6 +60,28 @@ internal fun GeoPulseGroup() {
                         enabled = it
                         GeoPulseSettings.setEnabled(context, it)
                         GeoPulseUploader.sync(context)
+                    },
+                )
+            },
+            {
+                SwitchSettingRow(
+                    title = stringResource(R.string.geopulse_share_activity),
+                    subtitle = stringResource(R.string.geopulse_share_activity_sub),
+                    checked = shareActivity,
+                    onCheckedChange = {
+                        shareActivity = it
+                        GeoPulseSettings.setShareActivity(context, it)
+                    },
+                )
+            },
+            {
+                SwitchSettingRow(
+                    title = stringResource(R.string.geopulse_share_places),
+                    subtitle = stringResource(R.string.geopulse_share_places_sub),
+                    checked = sharePlaces,
+                    onCheckedChange = {
+                        sharePlaces = it
+                        GeoPulseSettings.setSharePlaces(context, it)
                     },
                 )
             },

@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Sends each finished trip to a GeoPulse server, point by point as an OwnTracks client would
  * ([OwnTracksHttp]) — the one GeoPulse ingest that keeps what OwnTracks has no field for, which is
- * how the trip's activity reaches it.
+ * how the trip's activity reaches it, and the one that turns a named point into a favourite, which
+ * is how the places at its ends do. Each of those rides only while its switch is on.
  *
  * **A trip goes once it is finished and kept.** An open track waits for its close, so what arrives
  * is the settled path: the recorder's overrun at the edges already flagged and left out, and a trip
@@ -98,9 +99,7 @@ object GeoPulseUploader {
                     BATCH,
                 )
                 if (batch.isEmpty()) break
-                val labels = dao.activityLabels(batch.mapTo(HashSet()) { it.trackId })
-                    .associate { it.id to it.activityType }
-                val result = send(context, connection, batch, labels)
+                val result = send(context, connection, batch, extrasFor(context, batch))
                 sent += result.sent
                 failure = result.failure
             }
@@ -114,16 +113,41 @@ object GeoPulseUploader {
 
     private class BatchResult(val sent: Int, val failure: Failure?)
 
+    /** What a batch's points carry beyond the fix, each only where the user shares it: the
+     *  activity by track, and the place name by track end (keyed on the end fix's time). */
+    private class Extras(val activity: Map<Long, String>, val places: Map<Pair<Long, Long>, String>)
+
+    private suspend fun extrasFor(context: Context, batch: List<TrackPoint>): Extras {
+        val db = AppDatabase.get(context)
+        val trackIds = batch.mapTo(HashSet()) { it.trackId }
+        val activity = if (GeoPulseSettings.shareActivity(context)) {
+            db.trackDao().activityLabels(trackIds).associate { it.id to it.activityType }
+        } else {
+            emptyMap()
+        }
+        val places = if (GeoPulseSettings.sharePlaces(context)) {
+            db.placeDao().endPlacesOf(trackIds).associate { (it.trackId to it.atMs) to it.label }
+        } else {
+            emptyMap()
+        }
+        return Extras(activity, places)
+    }
+
     /** Sends [batch] in order, moving the mark past each point the server has answered for. */
     private fun send(
         context: Context,
         connection: GeoPulseSettings.Connection,
         batch: List<TrackPoint>,
-        labels: Map<Long, String>,
+        extras: Extras,
     ): BatchResult {
         var sent = 0
         for (point in batch) {
-            val body = OwnTracksHttp.location(point, labels[point.trackId], System.currentTimeMillis() / 1000)
+            val body = OwnTracksHttp.location(
+                point,
+                activity = extras.activity[point.trackId],
+                poi = extras.places[point.trackId to point.timestamp],
+                createdAtSec = System.currentTimeMillis() / 1000,
+            )
             when (val outcome = post(connection, body)) {
                 Outcome.Accepted -> sent++
                 Outcome.Refused -> DebugLog.w(TAG, "server refused point ${point.id}, skipping it")
