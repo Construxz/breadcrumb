@@ -123,4 +123,5 @@
     <string name="place_row_address">%1$s · %2$s</string>
     <string name="places_map_light">Show the map light</string>
     <string name="places_map_dark">Show the map dark</string>
+    <string name="places_new_place">New place</string>
 </resources>

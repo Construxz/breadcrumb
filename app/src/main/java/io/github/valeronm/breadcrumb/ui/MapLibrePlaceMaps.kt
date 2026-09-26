@@ -434,12 +434,19 @@ internal fun MapLibrePlacesMap(
     userLocation: Coordinate? = null,
     /** Where the screen wants the camera — see [MapCenterRequest]. */
     goTo: MapCenterRequest? = null,
+    /** What the map is looking at once the camera stops — where the Places map's crosshair aims. */
+    onCenterSettled: (Coordinate) -> Unit = {},
 ) {
     val applied = remember { AppliedOverviewInputs() }
+    val centerSettled by rememberUpdatedState(onCenterSettled)
     applied.onOpen = onOpen
     MapLibreStyledMap(
         modifier = modifier,
         onMapReady = { map ->
+            map.addOnCameraIdleListener {
+                val at = map.cameraPosition.target ?: return@addOnCameraIdleListener
+                centerSettled(at.toCoordinate())
+            }
             map.addOnMapClickListener { latLng ->
                 val key = overviewPlaceKeyNear(map, latLng)
                 if (key != null) applied.onOpen(key)

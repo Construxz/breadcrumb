@@ -95,4 +95,5 @@
     <string name="place_row_address">%1$s · %2$s</string>
     <string name="places_map_light">Mostrar o mapa claro</string>
     <string name="places_map_dark">Mostrar o mapa escuro</string>
+    <string name="places_new_place">Novo local</string>
 </resources>

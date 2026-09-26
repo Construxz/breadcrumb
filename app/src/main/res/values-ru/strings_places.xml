@@ -96,4 +96,5 @@
     <string name="place_row_address">%1$s · %2$s</string>
     <string name="places_map_light">Показать светлую карту</string>
     <string name="places_map_dark">Показать тёмную карту</string>
+    <string name="places_new_place">Новое место</string>
 </resources>

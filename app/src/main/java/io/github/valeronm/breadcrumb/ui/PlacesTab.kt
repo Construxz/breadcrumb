@@ -1,14 +1,11 @@
 package io.github.valeronm.breadcrumb.ui
 
 import android.content.Context
-import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,18 +18,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddLocationAlt
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
@@ -40,11 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
@@ -55,7 +38,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.valeronm.breadcrumb.BuildConfig
 import io.github.valeronm.breadcrumb.R
 import io.github.valeronm.breadcrumb.data.PlaceAddresses
 import io.github.valeronm.breadcrumb.domain.Coordinate
@@ -63,8 +45,6 @@ import io.github.valeronm.breadcrumb.domain.PlaceResolver
 import io.github.valeronm.breadcrumb.domain.PlaceSearch
 import io.github.valeronm.breadcrumb.domain.TimelineItem
 import io.github.valeronm.breadcrumb.domain.placeCategory
-import io.github.valeronm.breadcrumb.location.DeviceLocation
-import kotlinx.coroutines.launch
 import java.util.Locale
 import io.github.valeronm.breadcrumb.data.Settings as AppSettings
 
@@ -270,34 +250,11 @@ private fun PlacesMapPage(
     onOpenPlace: (String) -> Unit,
     onCreatePlaceAt: (Coordinate) -> Unit,
 ) {
-    val context = LocalContext.current
-    // The theme's shade until the reader picks one here: an overview of streets reads better light
-    // for some, and the app theme is a choice about the chrome, not about the map.
-    val themeDark = isSystemInDarkTheme()
-    var dark by rememberSaveable { mutableStateOf(AppSettings.placesMapDark(context) ?: themeDark) }
-    val scope = rememberCoroutineScope()
-    // The phone's position as a dot: the last one known on open, costing nothing; a fresh fix only
-    // once the reader asks to go there — which is also when a place can be started on it.
-    var userLocation by remember { mutableStateOf(DeviceLocation.lastKnown(context)) }
-    var goTo by remember { mutableStateOf<MapCenterRequest?>(null) }
-    var located by remember { mutableStateOf(false) }
-    var locating by remember { mutableStateOf(false) }
-    val goToMyLocation: () -> Unit = {
-        if (!locating) {
-            locating = true
-            scope.launch {
-                val here = DeviceLocation.current(context)
-                locating = false
-                if (here == null) {
-                    Toast.makeText(context, R.string.places_no_location, Toast.LENGTH_SHORT).show()
-                } else {
-                    userLocation = here
-                    goTo = MapCenterRequest(here)
-                    located = true
-                }
-            }
-        }
-    }
+    val shade = rememberMapShade()
+    val myLocation = rememberMyLocation()
+    // Where the map is looking, and whether the crosshair is up to start a place there.
+    var mapCenter by remember { mutableStateOf<Coordinate?>(null) }
+    var aiming by remember { mutableStateOf(false) }
     // Card padding keeps the texture-mode map off the back-gesture edge strips.
     Card(
         Modifier
@@ -317,26 +274,32 @@ private fun PlacesMapPage(
                     Modifier.fillMaxSize().padding(24.dp),
                 )
             } else {
-                MapShade(dark) {
+                MapShade(shade.dark) {
                     MapLibrePlacesMap(
                         places = mapPlaces,
                         frameKey = homeRequest,
                         onOpen = onOpenPlace,
                         modifier = Modifier.fillMaxSize(),
-                        userLocation = userLocation,
-                        goTo = goTo,
+                        userLocation = myLocation.position,
+                        goTo = myLocation.goTo,
+                        onCenterSettled = { mapCenter = it },
                     )
                 }
+                // A place where no stop has been found: the crosshair is dropped wherever the map
+                // looks — the phone's position after the location button, or anywhere panned to.
+                if (aiming) AimOverlay()
                 MapCornerControls(
-                    dark = dark,
-                    onToggleShade = {
-                        dark = !dark
-                        AppSettings.setPlacesMapDark(context, dark)
+                    shade = shade,
+                    location = myLocation,
+                    aiming = aiming,
+                    aimDescription = stringResource(R.string.places_new_place),
+                    confirmLabel = stringResource(R.string.places_new_here),
+                    onAim = { aiming = true },
+                    onCancelAim = { aiming = false },
+                    onConfirmAim = {
+                        mapCenter?.let(onCreatePlaceAt)
+                        aiming = false
                     },
-                    locating = locating,
-                    newPlaceAt = userLocation.takeIf { located },
-                    onMyLocation = goToMyLocation.takeIf { DeviceLocation.granted(context) },
-                    onNewPlace = onCreatePlaceAt,
                 )
             }
             MapFilterChip(
@@ -548,51 +511,3 @@ private fun visitPhrase(summary: PlaceResolver.PlaceSummary): String =
 @Composable
 private fun placeScrubberStops(listed: List<PlaceResolver.PlaceSummary>): List<ScrollStop<PlaceResolver.PlaceSummary>> =
     remember(listed) { listed.mapIndexed { index, summary -> ScrollStop(summary, index) } }
-
-/**
- * The Places map's buttons, stacked in its bottom-right corner — clear of the filter chip top-left,
- * the compass top-right and the attribution bottom-left, and lifted over the zoom readout where dev
- * builds show one. Nearest the corner, the basemap's light/dark switch. Above it, the way to where
- * the phone is ([onMyLocation], absent without a location grant), and — once it has gone there —
- * one that starts a new place on the spot, for somewhere the history has no stop at yet.
- */
-@Composable
-private fun BoxScope.MapCornerControls(
-    dark: Boolean,
-    onToggleShade: () -> Unit,
-    locating: Boolean,
-    newPlaceAt: Coordinate?,
-    onMyLocation: (() -> Unit)?,
-    onNewPlace: (Coordinate) -> Unit,
-) {
-    Column(
-        Modifier
-            .align(Alignment.BottomEnd)
-            .padding(end = 12.dp, bottom = if (BuildConfig.DEV_TOOLS) 44.dp else 12.dp),
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (newPlaceAt != null && onMyLocation != null) {
-            ExtendedFloatingActionButton(
-                onClick = { onNewPlace(newPlaceAt) },
-                icon = { Icon(Icons.Filled.AddLocationAlt, contentDescription = null) },
-                text = { Text(stringResource(R.string.places_new_here)) },
-            )
-        }
-        if (onMyLocation != null) {
-            SmallFloatingActionButton(onClick = onMyLocation, containerColor = MaterialTheme.colorScheme.surface) {
-                if (locating) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Filled.MyLocation, contentDescription = stringResource(R.string.places_my_location))
-                }
-            }
-        }
-        SmallFloatingActionButton(onClick = onToggleShade, containerColor = MaterialTheme.colorScheme.surface) {
-            Icon(
-                if (dark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
-                contentDescription = stringResource(if (dark) R.string.places_map_light else R.string.places_map_dark),
-            )
-        }
-    }
-}

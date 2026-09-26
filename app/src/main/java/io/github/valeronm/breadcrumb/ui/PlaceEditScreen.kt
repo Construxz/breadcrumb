@@ -1,11 +1,8 @@
 package io.github.valeronm.breadcrumb.ui
 
-import android.widget.Toast
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,23 +11,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterCenterFocus
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -44,15 +34,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -66,10 +51,8 @@ import io.github.valeronm.breadcrumb.domain.Coordinate
 import io.github.valeronm.breadcrumb.domain.DistanceFn
 import io.github.valeronm.breadcrumb.domain.PlaceClusterer
 import io.github.valeronm.breadcrumb.domain.PlaceResolver
-import io.github.valeronm.breadcrumb.location.DeviceLocation
 import io.github.valeronm.breadcrumb.util.SliderStops
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
@@ -155,30 +138,8 @@ internal fun PlaceEditScreen(
     // Where the map is looking, and whether the crosshair is up to place the pin there.
     var mapCenter by remember { mutableStateOf<Coordinate?>(null) }
     var aiming by remember { mutableStateOf(false) }
-    // The phone's position: the last one known on open, a fresh fix once the user asks to go there.
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var userLocation by remember { mutableStateOf(DeviceLocation.lastKnown(context)) }
-    var goTo by remember { mutableStateOf<MapCenterRequest?>(null) }
-    var locating by remember { mutableStateOf(false) }
-    // Going to the phone's position brings the crosshair up there: moving the pin onto it is then one
-    // more tap, and the cross says exactly where it would land.
-    val goToMyLocation: () -> Unit = {
-        if (!locating) {
-            locating = true
-            scope.launch {
-                val here = DeviceLocation.current(context)
-                locating = false
-                if (here == null) {
-                    Toast.makeText(context, R.string.places_no_location, Toast.LENGTH_SHORT).show()
-                } else {
-                    userLocation = here
-                    goTo = MapCenterRequest(here)
-                    aiming = true
-                }
-            }
-        }
-    }
+    val shade = rememberMapShade()
+    val myLocation = rememberMyLocation()
     val movePin: (Coordinate, String) -> Unit = { target, message ->
         val was = pin
         pin = target
@@ -274,7 +235,7 @@ internal fun PlaceEditScreen(
             }
             Card(Modifier.weight(1f).fillMaxWidth()) {
                 Box(Modifier.fillMaxSize().clipToBounds()) {
-                    MapShade(placesMapDark()) {
+                    MapShade(shade.dark) {
                         MapLibrePlaceMap(
                             center = PlaceMarker(pin, summary.place),
                             radiusM = radiusM.toDouble(),
@@ -289,35 +250,25 @@ internal fun PlaceEditScreen(
                             // either way.
                             onLongPress = { movePin(it, pinMoved) },
                             onCenterSettled = { mapCenter = it },
-                            userLocation = userLocation,
-                            goTo = goTo,
+                            userLocation = myLocation.position,
+                            goTo = myLocation.goTo,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
-                    // The precise way to place the pin: a long press puts it under a fingertip,
-                    // which covers the very spot it aims at, where a cross fixed at the middle of
-                    // the map stays visible while the map moves under it, at any zoom.
-                    if (aiming) {
-                        Crosshair(Modifier.align(Alignment.Center))
-                        LegendSurface(Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp)) {
-                            Text(
-                                stringResource(R.string.places_pin_aim_hint),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        }
-                    }
-                    AimControls(
+                    // The precise way to place the pin — see [AimOverlay].
+                    if (aiming) AimOverlay()
+                    MapCornerControls(
+                        shade = shade,
+                        location = myLocation,
                         aiming = aiming,
-                        canPlace = mapCenter != null,
-                        locating = locating,
-                        onMyLocation = goToMyLocation.takeIf { DeviceLocation.granted(context) },
+                        aimDescription = stringResource(R.string.places_pin_aim),
+                        confirmLabel = stringResource(R.string.places_pin_here),
                         onAim = { aiming = true },
-                        onCancel = { aiming = false },
-                        onPlace = {
+                        onCancelAim = { aiming = false },
+                        onConfirmAim = {
                             mapCenter?.let { movePin(it, pinMoved) }
                             aiming = false
                         },
-                        modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
                     )
                     // Over the map's corner, not under the slider: this number is read *while*
                     // dragging, and a hand reaching down to the slider covers everything below it.
@@ -443,63 +394,3 @@ internal fun nameSuggestions(
     distance: DistanceFn,
 ): List<OnlinePlaceSearch.Hit> =
     OnlinePlaceSearch.distinctRows(hits.filter { distance.meters(pin.lat, pin.lon, it.lat, it.lon) <= radiusM })
-
-/** A cross at the map's middle, drawn light over dark so it reads on either basemap. */
-@Composable
-private fun Crosshair(modifier: Modifier = Modifier) {
-    val ink = MaterialTheme.colorScheme.primary
-    Canvas(modifier.size(44.dp)) {
-        val c = size.width / 2
-        val arm = size.width / 2
-        val gap = 5.dp.toPx()
-        for ((color, width) in listOf(Color.White to 5.dp.toPx(), ink to 2.dp.toPx())) {
-            drawLine(color, Offset(c, 0f), Offset(c, c - gap), width, StrokeCap.Round)
-            drawLine(color, Offset(c, c + gap), Offset(c, size.height), width, StrokeCap.Round)
-            drawLine(color, Offset(0f, c), Offset(c - gap, c), width, StrokeCap.Round)
-            drawLine(color, Offset(c + gap, c), Offset(c + arm, c), width, StrokeCap.Round)
-        }
-    }
-}
-
-/**
- * The crosshair's buttons, over the map's bottom-right corner: one to bring the cross up, then one
- * to drop the pin under it and one to put it away again.
- */
-@Composable
-private fun AimControls(
-    aiming: Boolean,
-    canPlace: Boolean,
-    locating: Boolean,
-    /** Null when the app may not read the phone's position — then the button is not offered. */
-    onMyLocation: (() -> Unit)?,
-    onAim: () -> Unit,
-    onCancel: () -> Unit,
-    onPlace: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (onMyLocation != null) {
-            SmallFloatingActionButton(onClick = onMyLocation, containerColor = MaterialTheme.colorScheme.surface) {
-                if (locating) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Filled.MyLocation, contentDescription = stringResource(R.string.places_my_location))
-                }
-            }
-        }
-        if (aiming) {
-            SmallFloatingActionButton(onClick = onCancel, containerColor = MaterialTheme.colorScheme.surface) {
-                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_cancel))
-            }
-            ExtendedFloatingActionButton(
-                onClick = { if (canPlace) onPlace() },
-                icon = { Icon(Icons.Filled.Check, contentDescription = null) },
-                text = { Text(stringResource(R.string.places_pin_here)) },
-            )
-        } else {
-            SmallFloatingActionButton(onClick = onAim, containerColor = MaterialTheme.colorScheme.surface) {
-                Icon(Icons.Filled.PushPin, contentDescription = stringResource(R.string.places_pin_aim))
-            }
-        }
-    }
-}
