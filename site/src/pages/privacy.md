@@ -29,10 +29,10 @@ The app keeps the history in its private storage on your phone. Uninstalling the
 The history is kept until you delete it. A trip you delete, or one the app judged too
 short to keep, goes to Recently deleted. You can restore it there or clear the list. After two
 weeks the app deletes it for good the next time it starts. The app has no server. It sends your history
-nowhere on its own.
+nowhere on its own. The one exception is a GeoPulse server you connect it to yourself, described below.
 
 The app keeps the history out of Android's backup to your Google account. Android's transfer to a
-new phone still carries it. Your settings come across too. That copy goes straight from your old
+new phone still carries it. Your settings come across too, except a GeoPulse connection. That copy goes straight from your old
 phone to your new one. No server sees it. You turn the transfer off in your phone's settings, not
 in the app.
 
@@ -50,8 +50,18 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   by name. That search sends the words you typed to [Photon](https://photon.komoot.io/). Once
   the trip's starting point is on the map, the search also sends that point, so the results are
   the ones most relevant to your trip. Until then it sends the destination, if that one is placed.
+  When you name a place, the app suggests names from the same search. It sends the words you typed
+  and where the place is on the map.
   You can turn the search off under Settings → Privacy.
-  The app then searches only the list of cities built into it.
+  The app then searches only the list of cities built into it, and suggests no names.
+- **Your trips, if you connect a GeoPulse server.** Under Settings → Privacy you can give the app
+  the address of your own [GeoPulse](https://github.com/tess1o/geopulse) server, with a username and
+  password. The app then sends each trip to that server once the trip has ended. It sends the trip's
+  points the way the OwnTracks app does. A point holds a position, its time, its accuracy, altitude,
+  speed and direction. It can also say how you moved on that trip. When a trip starts or ends at one
+  of your places, the app also sends that place's name. You can turn off the way you moved and the
+  place names separately. Only trips that end after you turn this on are sent. The app sends them to
+  that address and nowhere else. Turning it off stops the sending.
 - **What you export.** A trip shared as a GPX file, or a backup of your whole history, goes
   wherever you send it. The app never sends it anywhere on its own.
 - **The log**, if you share it. The app keeps a log on the phone for troubleshooting. It reaches
@@ -76,7 +86,8 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   background. The app also uses one to tell you when activity detection has stopped responding.
 - **Run at startup, and ignore battery optimisations.** So recording resumes after a reboot and
   the phone does not stop it to save power.
-- **Network.** For the map tiles and the optional place search above.
+- **Network.** For the map tiles, the optional place search and the optional GeoPulse server
+  above.
 - **Fingerprint.** For the app lock, if you turn it on.
 
 ## The viewer

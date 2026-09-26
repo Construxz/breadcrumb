@@ -143,7 +143,7 @@ internal fun SettingsSubScreen(
 }
 
 @Composable
-private fun SettingsGroup(
+internal fun SettingsGroup(
     title: String,
     description: String,
     resetPrefs: List<Pref<*>>,
@@ -439,6 +439,8 @@ internal fun PrivacySettingsScreen(onBack: () -> Unit) {
         AppLockGroup()
         Spacer(Modifier.height(24.dp))
         OnlineServicesGroup()
+        Spacer(Modifier.height(24.dp))
+        GeoPulseGroup()
     }
 }
 
