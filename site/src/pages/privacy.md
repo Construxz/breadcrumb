@@ -23,6 +23,9 @@ app records, where it keeps it, and the few things that leave the phone.
   which Bluetooth device or Wi-Fi network belongs to a vehicle. While recording is on, the app
   notes when one of those connects and disconnects. It notes nothing about any other device or
   network. It keeps these notes for two weeks and uses them to tell which vehicle a trip was in.
+- **Which networks mean a place**, if you tie a Bluetooth device or Wi-Fi network to one of your
+  places. While recording is on, the notification says when your phone is connected to it. The app
+  keeps no record of those connections.
 
 Everything else the app shows is worked out on the phone from those records: the stays between
 trips, the places you return to, and journeys away from home.
@@ -84,8 +87,8 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   the phone does not stop it to save power.
 - **Network.** For the map tiles and the optional place search above.
 - **Fingerprint.** For the app lock, if you turn it on.
-- **Nearby devices.** To list your paired Bluetooth devices when you add one to a vehicle, and to
-  notice it connecting. The app asks for it only then.
+- **Nearby devices.** To list your paired Bluetooth devices when you add one to a vehicle or a
+  place, and to notice it connecting. The app asks for it only then.
 
 ## The viewer
 

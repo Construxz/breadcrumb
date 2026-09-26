@@ -86,6 +86,7 @@
     <string name="channel_alerts_description">Shown when automatic recording stops responding</string>
 
     <string name="notification_vehicle_connected">In %1$s (%2$s)</string>
+    <string name="notification_place_connected">At %1$s (%2$s)</string>
     <string name="notification_stop">Stop</string>
     <string name="notification_deaf_title">Activity detection stalled</string>
     <string name="notification_deaf_text">Trips may be missed or start late. Restarting the phone usually fixes it.</string>

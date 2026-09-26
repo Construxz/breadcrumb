@@ -60,7 +60,8 @@ import kotlin.math.roundToInt
 private val LINE_BREAK_RUN = Regex("[ \\t]*[\\r\\n]+[ \\t]*")
 
 /**
- * Everything the user gets to say about one place — its name, its capture radius and its center —
+ * Everything the user gets to say about one place — its name, its capture radius and its center,
+ * and the devices and networks that stand for it ([PlaceLinksCard], which writes on its own) —
  * over a full-height map of what the circle would take: this place's endpoints and the loose ones
  * around it, the named neighbors it competes with, and their areas muted underneath. Every
  * adjustment previews and none writes: the pin moves exactly as the slider moves the circle, and the
@@ -279,6 +280,9 @@ internal fun PlaceEditScreen(
                     }
                 }
             }
+            // What stands for this place (its Wi-Fi, typically). A row, not the list: see
+            // PlaceLinksCard. Only for a place that exists — a link needs a row to belong to.
+            if (place != null) PlaceLinksCard(place.id)
             // Under the map rather than up with the fields: removing is not one more thing to adjust,
             // and it must not sit next to the name it would once have been performed by clearing.
             // Low emphasis in the error color, and it takes effect at once with an Undo — the app
