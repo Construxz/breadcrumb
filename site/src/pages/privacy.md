@@ -52,12 +52,13 @@ screen, under Settings → Privacy. Recording carries on whether the app is lock
   the ones most relevant to your trip. Until then it sends the destination, if that one is placed.
   You can turn the search off under Settings → Privacy.
   The app then searches only the list of cities built into it.
-- **Your points, if you connect a GeoPulse server.** Under Settings → Privacy you can give the app
+- **Your trips, if you connect a GeoPulse server.** Under Settings → Privacy you can give the app
   the address of your own [GeoPulse](https://github.com/tess1o/geopulse) server, with a username
-  and password. The app then sends each point it records to that server, as the OwnTracks app
-  does. A point holds a position, its time, its accuracy, altitude, speed and direction. Only
-  points recorded after you turn this on are sent. The app sends them to that address and nowhere
-  else. Turning it off stops the sending.
+  and password. The app then sends each trip to that server once the trip has ended. It sends
+  the trip's points the way the OwnTracks app does. A point holds a position, its time, its
+  accuracy, altitude, speed and direction. It also says how you moved on that trip. Only trips
+  that end after you turn this on are sent. The app sends them to that address and nowhere else.
+  Turning it off stops the sending.
 - **What you export.** A trip shared as a GPX file, or a backup of your whole history, goes
   wherever you send it. The app never sends it anywhere on its own.
 - **The log**, if you share it. The app keeps a log on the phone for troubleshooting. It reaches

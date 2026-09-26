@@ -137,11 +137,11 @@
     <string name="logs_clear">Clear logs</string>
     <string name="logs_empty">No logs yet. They appear here once recording is armed and picks up movement.</string>
 
-    <!-- GeoPulse: sending recorded points to a self-hosted server over OwnTracks' HTTP mode -->
+    <!-- GeoPulse: sending finished trips to a self-hosted server over OwnTracks' HTTP mode -->
     <string name="geopulse_title" translatable="false">GeoPulse</string>
-    <string name="geopulse_description">Sends the points you record to your own GeoPulse server, the way OwnTracks does</string>
-    <string name="geopulse_enable">Send points to GeoPulse</string>
-    <string name="geopulse_enable_sub">Only points recorded after you switch this on</string>
+    <string name="geopulse_description">Sends each trip you record to your own GeoPulse server once it has ended</string>
+    <string name="geopulse_enable">Send trips to GeoPulse</string>
+    <string name="geopulse_enable_sub">Only trips that end after you switch this on</string>
     <string name="geopulse_server">Server address</string>
     <string name="geopulse_username">Username</string>
     <string name="geopulse_password">Password</string>

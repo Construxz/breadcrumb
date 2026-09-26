@@ -108,9 +108,9 @@
     <string name="logs_clear">Limpar os registos</string>
     <string name="logs_empty">Ainda sem registos. Aparecem aqui assim que a gravação estiver armada e detetar movimento.</string>
 
-    <string name="geopulse_description">Envia os pontos que grava para o seu próprio servidor GeoPulse, como faz o OwnTracks</string>
-    <string name="geopulse_enable">Enviar pontos para o GeoPulse</string>
-    <string name="geopulse_enable_sub">Só os pontos gravados depois de ativar esta opção</string>
+    <string name="geopulse_description">Envia cada viagem que grava para o seu próprio servidor GeoPulse, depois de terminar</string>
+    <string name="geopulse_enable">Enviar viagens para o GeoPulse</string>
+    <string name="geopulse_enable_sub">Só as viagens que terminem depois de ativar esta opção</string>
     <string name="geopulse_server">Endereço do servidor</string>
     <string name="geopulse_username">Nome de utilizador</string>
     <string name="geopulse_password">Palavra-passe</string>

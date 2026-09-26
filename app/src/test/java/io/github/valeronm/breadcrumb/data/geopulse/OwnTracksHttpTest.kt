@@ -57,11 +57,12 @@ class OwnTracksHttpTest {
             verticalAccuracy = 3.5f,
         )
 
-        val json = OwnTracksHttp.location(point, createdAtSec = 1_000_100L)
+        val json = OwnTracksHttp.location(point, "DRIVING", createdAtSec = 1_000_100L)
 
         assertEquals(
             "{\"_type\":\"location\",\"lat\":1.000123,\"lon\":-2.000456,\"tst\":1000000," +
-                "\"acc\":4,\"alt\":13,\"vel\":36,\"cog\":272,\"vac\":4,\"created_at\":1000100}",
+                "\"acc\":4,\"alt\":13,\"vel\":36,\"cog\":272,\"vac\":4,\"created_at\":1000100," +
+                "\"ext\":{\"track_id\":1,\"activity\":\"DRIVING\"}}",
             json,
         )
     }
@@ -78,10 +79,32 @@ class OwnTracksHttpTest {
             timestamp = 5_000L,
         )
 
-        val json = OwnTracksHttp.location(point, createdAtSec = 9L)
+        val json = OwnTracksHttp.location(point, activity = null, createdAtSec = 9L)
 
-        assertEquals("{\"_type\":\"location\",\"lat\":1.0,\"lon\":-2.0,\"tst\":5,\"created_at\":9}", json)
+        assertEquals(
+            "{\"_type\":\"location\",\"lat\":1.0,\"lon\":-2.0,\"tst\":5,\"created_at\":9," +
+                "\"ext\":{\"track_id\":1}}",
+            json,
+        )
         listOf("acc", "alt", "vel", "cog", "vac").forEach { assertFalse(it, "\"$it\"" in json) }
+    }
+
+    @Test fun `the first fix after a resume is marked, and a label is escaped`() {
+        val point = TrackPoint(
+            trackId = 7,
+            latitude = 1.0,
+            longitude = -2.0,
+            altitude = null,
+            accuracy = null,
+            speed = null,
+            bearing = null,
+            timestamp = 5_000L,
+            segmentStart = true,
+        )
+
+        val json = OwnTracksHttp.location(point, "A\"B\\C", createdAtSec = 9L)
+
+        assertTrue(json, json.endsWith(",\"ext\":{\"track_id\":7,\"activity\":\"A\\\"B\\\\C\",\"segment_start\":true}}"))
     }
 
     @Test fun `statuses sort into sent, skipped for good, and retried`() {

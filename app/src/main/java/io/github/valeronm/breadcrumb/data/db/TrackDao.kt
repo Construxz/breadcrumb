@@ -22,6 +22,9 @@ data class TrackStatsUpdate(
     val endLon: Double?,
 )
 
+/** A track's id and its [Track.activityType], for [TrackDao.activityLabels]. */
+data class TrackActivityLabel(val id: Long, val activityType: String)
+
 /** Excludes no row from the overlap checks — no track has this id ([TrackDao.countTracksSpanning]). */
 const val NO_TRACK = 0L
 
@@ -38,17 +41,23 @@ interface TrackDao {
     suspend fun insertPoints(points: List<TrackPoint>)
 
     /**
-     * The GeoPulse upload's queue: good points of [source] tracks timed after [after], oldest
-     * first. A one-shot read, never observed. The track filter runs first so the point walk stays
-     * on the `(trackId, timestamp)` index — only the open track and those ended since [after] can
-     * hold such a point, a track's end being its last good one.
+     * The GeoPulse upload's queue: good points of finished, kept [source] tracks timed after
+     * [after], oldest first. A one-shot read, never observed. An open track is left for its close,
+     * and a discarded one — too short to keep, or deleted — is never sent. The track filter runs
+     * first so the point walk stays on the `(trackId, timestamp)` index: only tracks ended since
+     * [after] can hold such a point, a track's end being its last good one.
      */
     @Query(
         "SELECT * FROM track_points WHERE ignored = 0 AND timestamp > :after AND trackId IN " +
-            "(SELECT id FROM tracks WHERE source = :source AND (endedAt IS NULL OR endedAt > :after)) " +
+            "(SELECT id FROM tracks WHERE source = :source AND discardedAt IS NULL " +
+            "AND endedAt IS NOT NULL AND endedAt > :after) " +
             "ORDER BY timestamp LIMIT :limit",
     )
-    suspend fun pointsAfter(source: String, after: Long, limit: Int): List<TrackPoint>
+    suspend fun finishedPointsAfter(source: String, after: Long, limit: Int): List<TrackPoint>
+
+    /** The activity each of [ids] is labelled with — what the GeoPulse upload says moved. */
+    @Query("SELECT id, activityType FROM tracks WHERE id IN (:ids)")
+    suspend fun activityLabels(ids: Collection<Long>): List<TrackActivityLabel>
 
     @Query("UPDATE tracks SET endedAt = :endedAt WHERE id = :trackId")
     suspend fun closeTrack(trackId: Long, endedAt: Long)

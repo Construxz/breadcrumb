@@ -1,7 +1,6 @@
 package io.github.valeronm.breadcrumb.data.geopulse
 
 import android.content.Context
-import android.os.SystemClock
 import io.github.valeronm.breadcrumb.data.db.AppDatabase
 import io.github.valeronm.breadcrumb.data.db.TrackPoint
 import io.github.valeronm.breadcrumb.data.geopulse.OwnTracksHttp.Failure
@@ -23,27 +22,33 @@ import java.net.URL
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Sends recorded points to a GeoPulse server as an OwnTracks client would ([OwnTracksHttp]).
+ * Sends each finished trip to a GeoPulse server, point by point as an OwnTracks client would
+ * ([OwnTracksHttp]) — the one GeoPulse ingest that keeps what OwnTracks has no field for, which is
+ * how the trip's activity reaches it.
  *
- * **The queue is the database.** Nothing is copied aside to be sent: a pass reads the recorder's
- * good points timed after [GeoPulseSettings.sentThroughMs] and moves that mark past each one the
- * server answers for. Being offline for a day therefore costs nothing but the wait, and a process
- * death mid-pass resends at most the point in flight — which GeoPulse's duplicate check absorbs.
- * Only the recorder's own tracks are read: an imported file or a typed trip is history, not a live
- * position, and a merge or split copies points under times already sent.
+ * **A trip goes once it is finished and kept.** An open track waits for its close, so what arrives
+ * is the settled path: the recorder's overrun at the edges already flagged and left out, and a trip
+ * too short to keep never sent. The legs where positioning dropped out are sent as they are — the
+ * two points either side of a gap — and GeoPulse draws a trip through them itself, only calling a
+ * silence a data gap once it runs for hours.
  *
- * A pass runs when something nudges it — the recorder after each batch of points (at most every
- * [LIVE_INTERVAL_MS]), a track closing, the watchdog's 15-minute alarm, process start, and the
- * Settings button — and stops at the first failure, to be retried by the next nudge. The recorder
- * is a foreground service, which keeps its network through Doze; that is what makes the nudges
- * from its own path enough, and why there is no job scheduler behind them.
+ * **The queue is the database.** Nothing is copied aside to be sent: a pass reads the good points
+ * of finished recorder tracks timed after [GeoPulseSettings.sentThroughMs] and moves that mark past
+ * each one the server answers for. Being offline for a day therefore costs nothing but the wait,
+ * and a process death mid-pass resends at most the point in flight — which GeoPulse's duplicate
+ * check absorbs. Only the recorder's own tracks are read: an imported file or a typed trip is
+ * history, not a recording, and a merge or split copies points under times already sent.
+ *
+ * A pass runs when a track closes, on the watchdog's 15-minute alarm, at process start, and from
+ * the Settings button, and stops at the first failure, to be retried by the next of those. The
+ * recorder is a foreground service, which keeps its network through Doze; that is what makes those
+ * nudges enough, and why there is no job scheduler behind them.
  */
 object GeoPulseUploader {
 
     private const val TAG = "GeoPulse"
     private const val BATCH = 200
     private const val TIMEOUT_MS = 15_000
-    private const val LIVE_INTERVAL_MS = 30_000L
 
     /** What the Settings group shows. [failure] is the last pass's, in this process only. */
     data class State(val sentThroughMs: Long = 0L, val sending: Boolean = false, val failure: Failure? = null)
@@ -54,9 +59,6 @@ object GeoPulseUploader {
     )
     private val running = AtomicBoolean(false)
 
-    @Volatile
-    private var lastPassAtMs = Long.MIN_VALUE / 2
-
     private val mutableState = MutableStateFlow(State())
 
     fun state(context: Context): StateFlow<State> {
@@ -64,19 +66,11 @@ object GeoPulseUploader {
         return mutableState.asStateFlow()
     }
 
-    /** The recorder's nudge, once per stored batch — cheap to call per second, since it is
-     *  throttled before it touches anything but a preference read. */
-    fun onPointsRecorded(context: Context) {
-        if (SystemClock.elapsedRealtime() - lastPassAtMs < LIVE_INTERVAL_MS) return
-        sync(context)
-    }
-
     /** Starts a pass unless one is running or the upload is off. */
     fun sync(context: Context) {
         val app = context.applicationContext
         if (!GeoPulseSettings.isEnabled(app)) return
         if (!running.compareAndSet(false, true)) return
-        lastPassAtMs = SystemClock.elapsedRealtime()
         scope.launch {
             try {
                 pass(app)
@@ -98,13 +92,15 @@ object GeoPulseUploader {
         var failure: Failure? = null
         try {
             while (failure == null && GeoPulseSettings.isEnabled(context)) {
-                val batch = dao.pointsAfter(
+                val batch = dao.finishedPointsAfter(
                     TrackOrigin.RECORDED.code,
                     GeoPulseSettings.sentThroughMs(context),
                     BATCH,
                 )
                 if (batch.isEmpty()) break
-                val result = send(context, connection, batch)
+                val labels = dao.activityLabels(batch.mapTo(HashSet()) { it.trackId })
+                    .associate { it.id to it.activityType }
+                val result = send(context, connection, batch, labels)
                 sent += result.sent
                 failure = result.failure
             }
@@ -119,10 +115,15 @@ object GeoPulseUploader {
     private class BatchResult(val sent: Int, val failure: Failure?)
 
     /** Sends [batch] in order, moving the mark past each point the server has answered for. */
-    private fun send(context: Context, connection: GeoPulseSettings.Connection, batch: List<TrackPoint>): BatchResult {
+    private fun send(
+        context: Context,
+        connection: GeoPulseSettings.Connection,
+        batch: List<TrackPoint>,
+        labels: Map<Long, String>,
+    ): BatchResult {
         var sent = 0
         for (point in batch) {
-            val body = OwnTracksHttp.location(point, System.currentTimeMillis() / 1000)
+            val body = OwnTracksHttp.location(point, labels[point.trackId], System.currentTimeMillis() / 1000)
             when (val outcome = post(connection, body)) {
                 Outcome.Accepted -> sent++
                 Outcome.Refused -> DebugLog.w(TAG, "server refused point ${point.id}, skipping it")
