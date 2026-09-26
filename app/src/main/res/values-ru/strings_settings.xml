@@ -109,4 +109,6 @@
     <string name="logs_share">Поделиться журналом</string>
     <string name="logs_clear">Очистить журнал</string>
     <string name="logs_empty">Журнал пока пуст. Он заполнится, когда запись включена и есть движение.</string>
+    <string name="privacy_place_addresses">Адреса мест</string>
+    <string name="privacy_place_addresses_sub">Показывает адрес каждого места в списке «Места». Отправляет расположение каждого места в тот же сервис.</string>
 </resources>

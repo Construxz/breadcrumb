@@ -107,4 +107,6 @@
     <string name="logs_share">Partilhar os registos</string>
     <string name="logs_clear">Limpar os registos</string>
     <string name="logs_empty">Ainda sem registos. Aparecem aqui assim que a gravação estiver armada e detetar movimento.</string>
+    <string name="privacy_place_addresses">Moradas dos locais</string>
+    <string name="privacy_place_addresses_sub">Mostra a morada de cada local na lista de Locais. Envia a localização de cada local ao mesmo serviço.</string>
 </resources>
